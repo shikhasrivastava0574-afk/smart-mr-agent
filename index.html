@@ -78,6 +78,25 @@
             <i data-lucide="message-square" style="color: #25D366; width: 14px; height: 14px;"></i>
             <span style="font-size: 0.8rem; color: #fff;">Dr WhatsApp</span>
           </button>
+          
+          <!-- Alert logs bell dropdown widget -->
+          <div class="header-notification-container">
+            <button id="notification-bell-btn" class="btn btn-secondary" style="padding: 6px 10px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 6px; cursor: pointer; outline: none;" title="Alert Logs (SMS/Email)">
+              <i data-lucide="bell" style="width: 14px; height: 14px; color: #f59e0b;"></i>
+              <span id="notification-badge" style="position: absolute; top: -4px; right: -4px; background: hsl(var(--color-danger)); color: #fff; font-size: 0.55rem; font-weight: 700; width: 14px; height: 14px; border-radius: 50%; display: none; align-items: center; justify-content: center; box-shadow: 0 0 6px hsl(var(--color-danger)); border: 1px solid #111;">0</span>
+            </button>
+            <div id="notification-dropdown" class="glass-panel" style="display: none; position: absolute; top: 38px; right: 0; width: 280px; max-height: 320px; overflow-y: auto; z-index: 500; padding: 12px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(17, 24, 39, 0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-radius: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; margin-bottom: 8px;">
+                <span style="font-size: 0.8rem; font-weight: 700; color: #fff;">Alert Logs (Email/SMS)</span>
+                <button type="button" id="clear-alerts-btn" style="background: transparent; border: none; color: hsl(var(--text-secondary)); font-size: 0.65rem; cursor: pointer;">Clear All</button>
+              </div>
+              <div id="notification-list" style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="text-align: center; color: #64748b; padding: 20px 0; font-size: 0.75rem;">
+                  No recent alert notifications.
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="status-pill online" title="Matching Agent Ready">
             <span class="status-indicator"></span>
             <span>Match Agent</span>

@@ -288,6 +288,11 @@ export class AgentConsole {
 
         this.writeLog(this.schedulingAgent.name, `Booking initialized in PENDING state. Awaiting physician confirmation.`, this.schedulingAgent.colorClass);
         
+        // Trigger SMS alert for doctor
+        const docObj = DOCTORS_DATA.find(d => d.id === docId);
+        const docNameStr = docObj ? docObj.name : docId;
+        this.app.addAlert("SMS", docNameStr, `New visit requested for ${date} at ${time} by representative ${mrName}. Reply 1 to Confirm.`);
+
         // Dispatch communication agent
         this.app.triggerDoctorWhatsApp(newMeeting);
         

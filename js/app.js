@@ -9,6 +9,7 @@ class App {
   constructor() {
     this.currentDate = new Date(2026, 5, 9); // June 2026 for simulation sync
     this.charts = {};
+    this.alerts = [];
 
     this.init();
   }
@@ -358,6 +359,7 @@ class App {
       docCancelBtn.addEventListener("click", () => this.resetDoctorEditor());
     }
 
+
     // 12. Doctor Directory - Deletion
     const docDeleteBtn = document.getElementById("doc-delete-btn");
     if (docDeleteBtn) {
@@ -366,6 +368,9 @@ class App {
         if (!docId) return;
 
         if (confirm("Are you sure you want to delete this physician? This will cancel all associated scheduled and pending visits.")) {
+          const doc = DOCTORS_DATA.find(d => d.id === docId);
+          const affectedMeetings = MEETINGS_DATA.filter(m => m.doctorId === docId && (m.status === 'scheduled' || m.status === 'pending'));
+
           try {
             const response = await fetch('/api/doctors/delete', {
               method: 'POST',
@@ -380,6 +385,14 @@ class App {
             this.resetDoctorEditor();
 
             this.console.writeLog("System", `Physician account removed from CRM registry. Resetting routes.`, "sender-system");
+
+            // Dispatch alerts
+            affectedMeetings.forEach(meet => {
+              const mr = MR_DATA.find(m => m.id === meet.mrId);
+              if (mr && doc) {
+                this.addAlert("SMS", mr.name, `Alert: Your visit with Dr. ${doc.name} on ${meet.date} at ${meet.time} was cancelled (physician removed from CRM).`);
+              }
+            });
 
             // Refresh other views
             this.renderCalendar();
@@ -512,6 +525,33 @@ class App {
         } catch (err) {
           this.console.writeLog("System", `Error reassigning representative: ${err.message}`, "sender-system");
         }
+      });
+    }
+
+    // 15. Notification Dropdown toggle
+    const bellBtn = document.getElementById("notification-bell-btn");
+    const dropdown = document.getElementById("notification-dropdown");
+    if (bellBtn && dropdown) {
+      bellBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+      });
+
+      document.addEventListener("click", () => {
+        dropdown.style.display = "none";
+      });
+
+      dropdown.addEventListener("click", (e) => {
+        e.stopPropagation();
+      });
+    }
+
+    // 16. Clear Alerts button
+    const clearAlertsBtn = document.getElementById("clear-alerts-btn");
+    if (clearAlertsBtn) {
+      clearAlertsBtn.addEventListener("click", () => {
+        this.alerts = [];
+        this.renderAlerts();
       });
     }
   }
@@ -1094,6 +1134,134 @@ class App {
     document.body.removeChild(link);
     
     this.console.writeLog("Report Agent", "CSV Spreadsheet downloaded successfully.", "sender-report");
+  }
+
+  // --- Transactional Alert Methods ---
+
+  addAlert(channel, recipient, message) {
+    const timestamp = new Date().toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const alert = {
+      channel, // 'EMAIL' or 'SMS'
+      recipient, // Name of doctor or MR
+      message,
+      timestamp
+    };
+    
+    this.alerts.unshift(alert); // Add to beginning of array
+    this.renderAlerts();
+    this.showToast(alert);
+  }
+
+  showToast(alert) {
+    let container = document.getElementById("toast-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "toast-container";
+      container.style.position = "fixed";
+      container.style.top = "20px";
+      container.style.right = "20px";
+      container.style.zIndex = "1000";
+      container.style.display = "flex";
+      container.style.flexDirection = "column";
+      container.style.gap = "10px";
+      container.style.pointerEvents = "none";
+      document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement("div");
+    toast.style.pointerEvents = "auto";
+    toast.style.background = "rgba(17, 24, 39, 0.9)";
+    toast.style.backdropFilter = "blur(12px)";
+    toast.style.webkitBackdropFilter = "blur(12px)";
+    toast.style.border = "1px solid rgba(255, 255, 255, 0.1)";
+    toast.style.borderRadius = "8px";
+    toast.style.padding = "12px 16px";
+    toast.style.boxShadow = "0 10px 25px rgba(0,0,0,0.5)";
+    toast.style.display = "flex";
+    toast.style.alignItems = "center";
+    toast.style.gap = "10px";
+    toast.style.minWidth = "280px";
+    toast.style.maxWidth = "360px";
+    toast.style.color = "#fff";
+    toast.style.animation = "toastSlideIn 0.3s ease-out forwards";
+    
+    const isEmail = alert.channel === "EMAIL";
+    const iconHtml = isEmail 
+      ? `<i data-lucide="mail" style="color: #60a5fa; width: 18px; height: 18px; flex-shrink: 0;"></i>`
+      : `<i data-lucide="smartphone" style="color: #25d366; width: 18px; height: 18px; flex-shrink: 0;"></i>`;
+      
+    toast.innerHTML = `
+      ${iconHtml}
+      <div style="flex-grow: 1; display: flex; flex-direction: column;">
+        <span style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: ${isEmail ? '#60a5fa' : '#25d366'};">
+          Transactional Alert (${alert.channel})
+        </span>
+        <span style="font-size: 0.75rem; font-weight: 600; color: #fff; margin-top: 2px;">
+          To: ${alert.recipient}
+        </span>
+        <span style="font-size: 0.7rem; color: #94a3b8; margin-top: 1px; line-height: 1.3;">
+          ${alert.message}
+        </span>
+      </div>
+      <button style="background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 1.2rem; line-height: 1; hover: color: #fff; padding: 0 4px;" onclick="this.parentElement.remove()">
+        &times;
+      </button>
+    `;
+    
+    container.appendChild(toast);
+    lucide.createIcons();
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      toast.style.animation = "toastSlideOut 0.3s ease-in forwards";
+      setTimeout(() => toast.remove(), 300);
+    }, 5000);
+  }
+
+  renderAlerts() {
+    const list = document.getElementById("notification-list");
+    const badge = document.getElementById("notification-badge");
+    if (!list) return;
+
+    if (this.alerts.length === 0) {
+      list.innerHTML = `
+        <div style="text-align: center; color: #64748b; padding: 20px 0; font-size: 0.75rem;">
+          No recent alert notifications.
+        </div>
+      `;
+      if (badge) {
+        badge.style.display = "none";
+        badge.textContent = "0";
+      }
+      return;
+    }
+
+    if (badge) {
+      badge.style.display = "flex";
+      badge.textContent = this.alerts.length;
+    }
+
+    list.innerHTML = this.alerts.map(alert => {
+      const isEmail = alert.channel === "EMAIL";
+      const channelColor = isEmail ? '#60a5fa' : '#25d366';
+      const icon = isEmail ? 'mail' : 'smartphone';
+      
+      return `
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 8px 10px; border-radius: 6px; display: flex; gap: 8px; align-items: flex-start; text-align: left;">
+          <i data-lucide="${icon}" style="width: 14px; height: 14px; color: ${channelColor}; flex-shrink: 0; margin-top: 2px;"></i>
+          <div style="display: flex; flex-direction: column; gap: 1px; flex-grow: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <span style="font-size: 0.6rem; font-weight: 700; color: ${channelColor}; text-transform: uppercase; letter-spacing: 0.5px;">${alert.channel}</span>
+              <span style="font-size: 0.55rem; color: #64748b;">${alert.timestamp}</span>
+            </div>
+            <span style="font-size: 0.7rem; font-weight: 600; color: #fff;">To: ${alert.recipient}</span>
+            <span style="font-size: 0.65rem; color: #94a3b8; line-height: 1.3; margin-top: 1px;">${alert.message}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+    
+    lucide.createIcons();
   }
 
   // --- Phone Simulator Methods ---
@@ -1689,6 +1857,12 @@ class App {
         this.console.writeLog("Communication Agent", `WhatsApp confirmation received from ${this.activeWhatsAppDoctor.name}. Dispatching calendar tokens...`, "sender-comm");
         this.console.writeLog("Scheduling Agent", `Doctor approved pending booking. Status synchronized to SCHEDULED.`, "sender-scheduling");
         
+        // Trigger Email alert for representative
+        const mr = MR_DATA.find(m => m.id === this.pendingMeeting.mrId);
+        if (mr && this.activeWhatsAppDoctor) {
+          this.addAlert("EMAIL", mr.name, `Dr. ${this.activeWhatsAppDoctor.name} confirmed your visit scheduled for ${meetingDate} at ${meetingTime}.`);
+        }
+
         // Refresh views
         this.renderCalendar();
         this.renderPhoneAgenda(); // Synced to rep phone!
@@ -1744,6 +1918,12 @@ class App {
           this.addWhatsAppBubble("received", `Conflict check cleared. Representative has been rerouted. Rescheduled to <strong>${newTime}</strong> on ${date}. Confirmed!`);
           
           this.console.writeLog("Scheduling Agent", `Rerouting scheduled paths. Meeting date confirmed at adjusted slot: ${newTime}.`, "sender-scheduling");
+
+          // Trigger Email alert for representative
+          const mr = MR_DATA.find(m => m.id === this.pendingMeeting.mrId);
+          if (mr && this.activeWhatsAppDoctor) {
+            this.addAlert("EMAIL", mr.name, `Dr. ${this.activeWhatsAppDoctor.name} requested reschedule. Visit confirmed for ${date} at ${newTime}.`);
+          }
 
           this.renderCalendar();
           this.renderPhoneAgenda();

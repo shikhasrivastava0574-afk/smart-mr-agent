@@ -1617,3 +1617,50 @@ table.data-table tr:hover td {
   border: 1px solid rgba(245, 158, 11, 0.15);
 }
 
+/* --- Transactional Alerts & Dropdown --- */
+.header-notification-container {
+  position: relative;
+  display: inline-block;
+}
+
+#notification-bell-btn {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+#notification-bell-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+#notification-dropdown::-webkit-scrollbar {
+  width: 4px;
+}
+
+#notification-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+/* Slide-in Animations */
+@keyframes toastSlideIn {
+  0% {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toastSlideOut {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+}
+

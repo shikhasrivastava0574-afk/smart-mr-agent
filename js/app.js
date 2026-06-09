@@ -45,6 +45,11 @@ class App {
         PRODUCTS_DATA.length = 0;
         PRODUCTS_DATA.push(...db.products);
       }
+
+      if (document.getElementById("doctors-grid")) {
+        this.renderDoctorDirectory();
+      }
+
       return true;
     } catch (err) {
       console.error('Error syncing with server:', err);
@@ -286,6 +291,131 @@ class App {
           } catch (err) {
             this.console.writeLog("System", `Error registering product: ${err.message}`, "sender-system");
           }
+        }
+      });
+    }
+
+    // 10. Doctor Directory - Search & Filter
+    const docSearch = document.getElementById("doctor-search-input");
+    const docRegionFilter = document.getElementById("doctor-region-filter");
+    
+    if (docSearch) {
+      docSearch.addEventListener("input", () => this.renderDoctorDirectory());
+    }
+    if (docRegionFilter) {
+      docRegionFilter.addEventListener("change", () => this.renderDoctorDirectory());
+    }
+
+    // 11. Doctor Directory - Form Reset / Cancel
+    const docCancelBtn = document.getElementById("doc-cancel-btn");
+    if (docCancelBtn) {
+      docCancelBtn.addEventListener("click", () => this.resetDoctorEditor());
+    }
+
+    // 12. Doctor Directory - Deletion
+    const docDeleteBtn = document.getElementById("doc-delete-btn");
+    if (docDeleteBtn) {
+      docDeleteBtn.addEventListener("click", async () => {
+        const docId = document.getElementById("edit-doctor-id").value;
+        if (!docId) return;
+
+        if (confirm("Are you sure you want to delete this physician? This will cancel all associated scheduled and pending visits.")) {
+          try {
+            const response = await fetch('/api/doctors/delete', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: docId })
+            });
+            if (!response.ok) throw new Error('Failed to delete physician on server');
+            const updatedDb = await response.json();
+            
+            // Sync and refresh
+            await this.syncWithServer(updatedDb);
+            this.resetDoctorEditor();
+
+            this.console.writeLog("System", `Physician account removed from CRM registry. Resetting routes.`, "sender-system");
+
+            // Refresh other views
+            this.renderCalendar();
+            this.initDropdowns(); // updates scheduler select list!
+            this.renderPhoneAgenda();
+
+            if (window.confetti) {
+              window.confetti({ particleCount: 50, spread: 40, colors: ['#ff4444', '#ff8888'] });
+            }
+          } catch (err) {
+            this.console.writeLog("System", `Error deleting physician: ${err.message}`, "sender-system");
+          }
+        }
+      });
+    }
+
+    // 13. Doctor Directory - Submit Form (Create / Update)
+    const docForm = document.getElementById("doctor-editor-form");
+    if (docForm) {
+      docForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const docId = document.getElementById("edit-doctor-id").value;
+        const name = document.getElementById("doc-name").value.trim();
+        const clinicName = document.getElementById("doc-clinic").value.trim();
+        const specialty = document.getElementById("doc-specialty").value;
+        const region = document.getElementById("doc-region").value;
+        const address = document.getElementById("doc-address").value.trim();
+        const phone = document.getElementById("doc-phone").value.trim();
+        const email = document.getElementById("doc-email").value.trim();
+        const potential = document.getElementById("doc-potential").value;
+        const preferredTime = document.getElementById("doc-preferred-time").value;
+
+        // Get availability checkboxes
+        const checkedBoxes = document.querySelectorAll("#doc-availability-checkboxes input:checked");
+        const availability = Array.from(checkedBoxes).map(cb => cb.value);
+
+        if (availability.length === 0) {
+          alert("Please select at least one day of availability.");
+          return;
+        }
+
+        const payload = { name, clinicName, specialty, region, address, phone, email, availability, prescriptionPotential: potential, preferredTime };
+
+        try {
+          let response;
+          if (docId) {
+            // Update operation
+            payload.id = docId;
+            response = await fetch('/api/doctors/update', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+          } else {
+            // Create operation
+            response = await fetch('/api/doctors', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+          }
+
+          if (!response.ok) throw new Error('Failed to save physician profile on server');
+          const updatedDb = await response.json();
+          await this.syncWithServer(updatedDb);
+
+          this.resetDoctorEditor();
+
+          const logMsg = docId ? `Updated physician profile: ${name}.` : `Registered new physician profile: ${name} (${specialty}).`;
+          this.console.writeLog("System", logMsg, "sender-system");
+
+          // Refresh dropdown lists & calendar views
+          this.initDropdowns();
+          this.renderCalendar();
+          this.renderPhoneAgenda();
+
+          if (window.confetti) {
+            window.confetti({ particleCount: 60, spread: 50, origin: { y: 0.6 } });
+          }
+        } catch (err) {
+          this.console.writeLog("System", `Error saving physician: ${err.message}`, "sender-system");
         }
       });
     }
@@ -1152,6 +1282,132 @@ class App {
         <option value="${p.id}">${p.name} (${p.specialty})</option>
       `).join("");
     }
+  }
+
+  // --- Doctor Directory Methods ---
+
+  renderDoctorDirectory() {
+    const grid = document.getElementById("doctors-grid");
+    if (!grid) return;
+
+    const query = (document.getElementById("doctor-search-input")?.value || "").toLowerCase().trim();
+    const region = document.getElementById("doctor-region-filter")?.value || "All";
+
+    const filtered = DOCTORS_DATA.filter(doc => {
+      const matchQuery = !query || 
+        doc.name.toLowerCase().includes(query) || 
+        doc.clinicName.toLowerCase().includes(query) || 
+        doc.specialty.toLowerCase().includes(query);
+      const matchRegion = region === "All" || doc.region.toLowerCase() === region.toLowerCase();
+      return matchQuery && matchRegion;
+    });
+
+    const activeEditId = document.getElementById("edit-doctor-id")?.value || "";
+
+    if (filtered.length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; color: hsl(var(--text-secondary)); padding: 40px; font-size: 0.85rem;">
+          <i data-lucide="info" style="width: 24px; height: 24px; margin-bottom: 8px; opacity: 0.5;"></i>
+          <div>No physicians match the search filters.</div>
+        </div>
+      `;
+      lucide.createIcons();
+      return;
+    }
+
+    grid.innerHTML = filtered.map(doc => {
+      const initials = doc.name.replace("Dr. ", "").split(" ").map(n => n[0]).join("");
+      const availabilityStr = doc.availability.join(", ");
+      const potentialClass = doc.prescriptionPotential.toLowerCase();
+      const isSelected = doc.id === activeEditId ? "selected" : "";
+
+      return `
+        <div class="doc-card ${isSelected}" data-doc-id="${doc.id}">
+          <span class="badge-potential ${potentialClass}">${doc.prescriptionPotential}</span>
+          <div class="doc-card-header">
+            <div class="doc-avatar">${initials}</div>
+            <div class="doc-meta">
+              <span class="doc-name">${doc.name}</span>
+              <span class="doc-clinic">${doc.clinicName}</span>
+            </div>
+          </div>
+          <div class="tag-list" style="margin-bottom: 8px;">
+            <span class="tag tag-accent-matching" style="font-size:0.7rem;">${doc.specialty}</span>
+            <span class="tag" style="font-size:0.7rem;">${doc.region}</span>
+          </div>
+          <ul class="doc-details-list">
+            <li><i data-lucide="map-pin"></i> <span>${doc.address}</span></li>
+            <li><i data-lucide="calendar-clock"></i> <span>${availabilityStr}</span></li>
+            <li><i data-lucide="phone"></i> <span>${doc.phone || 'No Phone'}</span></li>
+            <li><i data-lucide="mail"></i> <span>${doc.email || 'No Email'}</span></li>
+          </ul>
+        </div>
+      `;
+    }).join("");
+
+    lucide.createIcons();
+
+    // Bind card select click handlers
+    const cards = grid.querySelectorAll(".doc-card");
+    cards.forEach(card => {
+      card.addEventListener("click", () => {
+        const docId = card.dataset.docId;
+        this.selectDoctorForEdit(docId);
+      });
+    });
+  }
+
+  selectDoctorForEdit(docId) {
+    const doc = DOCTORS_DATA.find(d => d.id === docId);
+    if (!doc) return;
+
+    // Highlight card
+    const cards = document.querySelectorAll(".doc-card");
+    cards.forEach(c => c.classList.remove("selected"));
+    const selectedCard = document.querySelector(`.doc-card[data-doc-id="${docId}"]`);
+    if (selectedCard) selectedCard.classList.add("selected");
+
+    // Populate form inputs
+    document.getElementById("edit-doctor-id").value = doc.id;
+    document.getElementById("doc-name").value = doc.name;
+    document.getElementById("doc-clinic").value = doc.clinicName;
+    document.getElementById("doc-specialty").value = doc.specialty;
+    document.getElementById("doc-region").value = doc.region;
+    document.getElementById("doc-address").value = doc.address;
+    document.getElementById("doc-phone").value = doc.phone || "";
+    document.getElementById("doc-email").value = doc.email || "";
+    document.getElementById("doc-potential").value = doc.prescriptionPotential;
+    document.getElementById("doc-preferred-time").value = doc.preferredTime || "Morning (09:00 - 12:00)";
+
+    // Set checkboxes
+    const checkboxes = document.querySelectorAll("#doc-availability-checkboxes input");
+    checkboxes.forEach(cb => {
+      cb.checked = doc.availability.includes(cb.value);
+    });
+
+    // Update UI headers and display delete button
+    document.getElementById("doctor-editor-title").textContent = "Edit Physician Profile";
+    document.getElementById("doc-delete-btn").style.display = "flex";
+  }
+
+  resetDoctorEditor() {
+    // Clear select styling
+    const cards = document.querySelectorAll(".doc-card");
+    cards.forEach(c => c.classList.remove("selected"));
+
+    // Reset inputs
+    document.getElementById("edit-doctor-id").value = "";
+    document.getElementById("doctor-editor-form").reset();
+
+    // Reset checkboxes to checked by default
+    const checkboxes = document.querySelectorAll("#doc-availability-checkboxes input");
+    checkboxes.forEach(cb => {
+      cb.checked = cb.value !== "Saturday";
+    });
+
+    // Update UI headers
+    document.getElementById("doctor-editor-title").textContent = "Register New Physician";
+    document.getElementById("doc-delete-btn").style.display = "none";
   }
 }
 

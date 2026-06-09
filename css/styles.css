@@ -1329,3 +1329,129 @@ table.data-table tr:hover td {
 .whatsapp-mic-btn:hover {
   transform: scale(1.05);
 }
+
+/* Doctor Directory specific styles */
+.doc-card {
+  border: 1px solid var(--glass-border);
+  background: hsla(0, 0%, 100%, 0.02);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.doc-card:hover {
+  background: hsla(0, 0%, 100%, 0.05);
+  border-color: hsla(var(--agent-matching), 0.4);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.doc-card.selected {
+  background: hsla(var(--agent-matching), 0.05);
+  border-color: hsl(var(--agent-matching));
+  box-shadow: 0 0 15px hsla(var(--agent-matching), 0.15);
+}
+
+.doc-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.doc-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: hsla(var(--agent-matching), 0.15);
+  border: 1px solid hsla(var(--agent-matching), 0.3);
+  color: hsl(var(--agent-matching));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.doc-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-name {
+  font-weight: 600;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.doc-clinic {
+  font-size: 0.75rem;
+  color: hsl(var(--text-secondary));
+  margin-top: 2px;
+}
+
+.doc-card .tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.doc-details-list {
+  font-size: 0.75rem;
+  color: hsl(var(--text-secondary));
+  margin-bottom: 0;
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.doc-details-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.doc-details-list i {
+  width: 14px;
+  height: 14px;
+  color: hsl(var(--agent-matching));
+  opacity: 0.8;
+}
+
+.doc-card .badge-potential {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-potential.high {
+  background: rgba(37, 211, 102, 0.1);
+  border: 1px solid rgba(37, 211, 102, 0.3);
+  color: #25d366;
+}
+
+.badge-potential.medium {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
+}
+
+.badge-potential.low {
+  background: rgba(100, 116, 139, 0.1);
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  color: #94a3b8;
+}

@@ -45,6 +45,10 @@
           <i data-lucide="file-text"></i>
           <span>Executive Reports</span>
         </a>
+        <a class="nav-item" data-target="doctors-view">
+          <i data-lucide="stethoscope"></i>
+          <span>Doctor Directory</span>
+        </a>
       </nav>
       
       <div class="user-profile">
@@ -525,6 +529,159 @@
               <div class="report-preview-panel" id="report-preview-element">
                 <!-- Generated preview markup will be injected here -->
               </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. Doctor Directory Panel (CRM) -->
+        <section id="doctors-view" class="dashboard-view">
+          <div class="grid-main" style="grid-template-columns: 1.2fr 0.8fr;">
+            <!-- Left panel: Search, filter & Grid of cards -->
+            <div class="glass-panel" style="display: flex; flex-direction: column; overflow: hidden; height: calc(100vh - var(--header-height) - 64px);">
+              <h2 class="section-title">
+                <i data-lucide="stethoscope" style="color: hsl(var(--agent-matching));"></i>
+                <span>Physician CRM Registry</span>
+              </h2>
+              
+              <!-- Search & Filters -->
+              <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                <div style="flex: 1; position: relative;">
+                  <input type="text" id="doctor-search-input" placeholder="Search by name, specialty, or clinic..." style="width: 100%; padding: 10px 12px 10px 36px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; font-size: 0.85rem;">
+                  <i data-lucide="search" style="position: absolute; left: 10px; top: 12px; width: 16px; height: 16px; color: hsl(var(--text-secondary)); pointer-events: none;"></i>
+                </div>
+                <select id="doctor-region-filter" class="form-select" style="width: 180px; margin: 0; padding: 10px;">
+                  <option value="All">All Regions</option>
+                  <option value="Lucknow">Lucknow</option>
+                  <option value="Noida">Noida</option>
+                  <option value="Varanasi">Varanasi</option>
+                  <option value="Kanpur">Kanpur</option>
+                  <option value="Gorakhpur">Gorakhpur</option>
+                  <option value="Prayagraj">Prayagraj</option>
+                </select>
+              </div>
+
+              <!-- Doctors Cards Grid -->
+              <div id="doctors-grid" style="flex: 1; overflow-y: auto; padding-right: 4px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; align-content: start;">
+                <!-- Doctor Cards will be injected dynamically -->
+              </div>
+            </div>
+
+            <!-- Right panel: Details & Editor form -->
+            <div class="glass-panel" style="overflow-y: auto; max-height: calc(100vh - var(--header-height) - 64px); display: flex; flex-direction: column;">
+              <h2 class="section-title">
+                <i data-lucide="user-cog" style="color: hsl(var(--agent-system));"></i>
+                <span id="doctor-editor-title">Register New Physician</span>
+              </h2>
+
+              <form id="doctor-editor-form" style="display: flex; flex-direction: column; gap: 16px; margin-top: 8px;">
+                <input type="hidden" id="edit-doctor-id" value="">
+
+                <div class="form-group">
+                  <label for="doc-name">Full Name</label>
+                  <input type="text" id="doc-name" class="form-select" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; padding: 10px;" placeholder="e.g. Dr. Ramesh Kumar" required>
+                </div>
+
+                <div class="form-group">
+                  <label for="doc-clinic">Clinic / Hospital Name</label>
+                  <input type="text" id="doc-clinic" class="form-select" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; padding: 10px;" placeholder="e.g. Awadh Heart Center" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <div class="form-group">
+                    <label for="doc-specialty">Specialty</label>
+                    <select id="doc-specialty" class="form-select">
+                      <option value="Cardiology">Cardiology</option>
+                      <option value="Oncology">Oncology</option>
+                      <option value="Neurology">Neurology</option>
+                      <option value="Diabetes & Endocrinology">Diabetes & Endocrinology</option>
+                      <option value="Pediatrics">Pediatrics</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="doc-region">Region</label>
+                    <select id="doc-region" class="form-select">
+                      <option value="Lucknow">Lucknow</option>
+                      <option value="Noida">Noida</option>
+                      <option value="Varanasi">Varanasi</option>
+                      <option value="Kanpur">Kanpur</option>
+                      <option value="Gorakhpur">Gorakhpur</option>
+                      <option value="Prayagraj">Prayagraj</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="doc-address">Clinic Address</label>
+                  <input type="text" id="doc-address" class="form-select" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; padding: 10px;" placeholder="e.g. Hazratganj, Lucknow, UP" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <div class="form-group">
+                    <label for="doc-phone">Phone Number</label>
+                    <input type="text" id="doc-phone" class="form-select" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; padding: 10px;" placeholder="e.g. +91 98765 00000" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="doc-email">Email Address</label>
+                    <input type="email" id="doc-email" class="form-select" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; padding: 10px;" placeholder="e.g. doctor@clinic.com" required>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <div class="form-group">
+                    <label for="doc-potential">Prescription Potential</label>
+                    <select id="doc-potential" class="form-select">
+                      <option value="High">High</option>
+                      <option value="Medium">Medium</option>
+                      <option value="Low">Low</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="doc-preferred-time">Preferred Time Slot</label>
+                    <select id="doc-preferred-time" class="form-select">
+                      <option value="Morning (09:00 - 12:00)">Morning (09:00 - 12:00)</option>
+                      <option value="Afternoon (14:00 - 17:00)">Afternoon (14:00 - 17:00)</option>
+                      <option value="Evening (17:30 - 20:00)">Evening (17:30 - 20:00)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Weekly Availability</label>
+                  <div id="doc-availability-checkboxes" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 0.8rem; margin-top: 4px;">
+                    <label style="display: flex; align-items: center; gap: 6px; color: hsl(var(--text-secondary)); cursor: pointer;">
+                      <input type="checkbox" value="Monday" checked> Monday
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; color: hsl(var(--text-secondary)); cursor: pointer;">
+                      <input type="checkbox" value="Tuesday" checked> Tuesday
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; color: hsl(var(--text-secondary)); cursor: pointer;">
+                      <input type="checkbox" value="Wednesday" checked> Wednesday
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; color: hsl(var(--text-secondary)); cursor: pointer;">
+                      <input type="checkbox" value="Thursday" checked> Thursday
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; color: hsl(var(--text-secondary)); cursor: pointer;">
+                      <input type="checkbox" value="Friday" checked> Friday
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; color: hsl(var(--text-secondary)); cursor: pointer;">
+                      <input type="checkbox" value="Saturday"> Saturday
+                    </label>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 12px; margin-bottom: 8px;">
+                  <button type="submit" id="doc-save-btn" class="btn btn-primary" style="flex: 1; background: linear-gradient(135deg, hsl(var(--agent-system)), hsl(var(--agent-matching))); box-shadow: 0 4px 15px hsla(var(--agent-matching), 0.2);">
+                    <i data-lucide="check-circle"></i> Save Physician
+                  </button>
+                  <button type="button" id="doc-cancel-btn" class="btn btn-secondary" style="flex: 0.5;">
+                    Cancel
+                  </button>
+                </div>
+
+                <button type="button" id="doc-delete-btn" class="btn" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; width: 100%; display: none; justify-content: center; align-items: center; gap: 8px; font-weight: 500;">
+                  <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i> Delete Physician Account
+                </button>
+              </form>
             </div>
           </div>
         </section>

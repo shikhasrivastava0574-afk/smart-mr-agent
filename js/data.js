@@ -103,7 +103,9 @@ export const DOCTORS_DATA = [
     address: "Hazratganj, Lucknow, UP",
     availability: ["Monday", "Wednesday", "Friday"],
     prescriptionPotential: "High",
-    preferredTime: "Morning (09:00 - 12:00)"
+    preferredTime: "Morning (09:00 - 12:00)",
+    phone: "+91 99345 67890",
+    email: "alok.misra@lucknowcardio.org"
   },
   {
     id: "doc-02",
@@ -114,7 +116,9 @@ export const DOCTORS_DATA = [
     address: "Sector 62, Noida, UP",
     availability: ["Tuesday", "Thursday"],
     prescriptionPotential: "High",
-    preferredTime: "Afternoon (14:00 - 17:00)"
+    preferredTime: "Afternoon (14:00 - 17:00)",
+    phone: "+91 98123 45678",
+    email: "sunita.rao@noidacancercare.com"
   },
   {
     id: "doc-03",
@@ -125,7 +129,9 @@ export const DOCTORS_DATA = [
     address: "Lanka, Varanasi, UP",
     availability: ["Monday", "Thursday", "Friday"],
     prescriptionPotential: "High",
-    preferredTime: "Morning (08:30 - 11:30)"
+    preferredTime: "Morning (08:30 - 11:30)",
+    phone: "+91 97234 56789",
+    email: "rakesh.dwivedi@kashineuro.in"
   },
   {
     id: "doc-04",
@@ -136,7 +142,9 @@ export const DOCTORS_DATA = [
     address: "Swaroop Nagar, Kanpur, UP",
     availability: ["Tuesday", "Wednesday"],
     prescriptionPotential: "Medium",
-    preferredTime: "Afternoon (13:00 - 16:00)"
+    preferredTime: "Afternoon (13:00 - 16:00)",
+    phone: "+91 96345 67890",
+    email: "v.asthana@kanpurendocrine.com"
   },
   {
     id: "doc-05",
@@ -147,7 +155,9 @@ export const DOCTORS_DATA = [
     address: "Golghar, Gorakhpur, UP",
     availability: ["Wednesday", "Friday"],
     prescriptionPotential: "High",
-    preferredTime: "Morning (10:00 - 12:00)"
+    preferredTime: "Morning (10:00 - 12:00)",
+    phone: "+91 95456 78901",
+    email: "harish.c@gorakhpurchildren.org"
   },
   {
     id: "doc-06",
@@ -158,7 +168,9 @@ export const DOCTORS_DATA = [
     address: "Gomti Nagar, Lucknow, UP",
     availability: ["Tuesday", "Friday"],
     prescriptionPotential: "Medium",
-    preferredTime: "Afternoon (15:00 - 17:00)"
+    preferredTime: "Afternoon (15:00 - 17:00)",
+    phone: "+91 94567 89012",
+    email: "neha.saxena@awadhheart.com"
   },
   {
     id: "doc-07",
@@ -169,7 +181,9 @@ export const DOCTORS_DATA = [
     address: "Civil Lines, Prayagraj, UP",
     availability: ["Wednesday", "Thursday"],
     prescriptionPotential: "High",
-    preferredTime: "Afternoon (14:00 - 16:30)"
+    preferredTime: "Afternoon (14:00 - 16:30)",
+    phone: "+91 93678 90123",
+    email: "skpathak@sangamdiagnostics.co.in"
   }
 ];
 

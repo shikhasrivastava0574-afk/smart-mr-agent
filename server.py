@@ -112,7 +112,9 @@ DEFAULT_DATA = {
             "address": "Hazratganj, Lucknow, UP",
             "availability": ["Monday", "Wednesday", "Friday"],
             "prescriptionPotential": "High",
-            "preferredTime": "Morning (09:00 - 12:00)"
+            "preferredTime": "Morning (09:00 - 12:00)",
+            "phone": "+91 99345 67890",
+            "email": "alok.misra@lucknowcardio.org"
         },
         {
             "id": "doc-02",
@@ -123,7 +125,9 @@ DEFAULT_DATA = {
             "address": "Sector 62, Noida, UP",
             "availability": ["Tuesday", "Thursday"],
             "prescriptionPotential": "High",
-            "preferredTime": "Afternoon (14:00 - 17:00)"
+            "preferredTime": "Afternoon (14:00 - 17:00)",
+            "phone": "+91 98123 45678",
+            "email": "sunita.rao@noidacancercare.com"
         },
         {
             "id": "doc-03",
@@ -134,7 +138,9 @@ DEFAULT_DATA = {
             "address": "Lanka, Varanasi, UP",
             "availability": ["Monday", "Thursday", "Friday"],
             "prescriptionPotential": "High",
-            "preferredTime": "Morning (08:30 - 11:30)"
+            "preferredTime": "Morning (08:30 - 11:30)",
+            "phone": "+91 97234 56789",
+            "email": "rakesh.dwivedi@kashineuro.in"
         },
         {
             "id": "doc-04",
@@ -145,7 +151,9 @@ DEFAULT_DATA = {
             "address": "Swaroop Nagar, Kanpur, UP",
             "availability": ["Tuesday", "Wednesday"],
             "prescriptionPotential": "Medium",
-            "preferredTime": "Afternoon (13:00 - 16:00)"
+            "preferredTime": "Afternoon (13:00 - 16:00)",
+            "phone": "+91 96345 67890",
+            "email": "v.asthana@kanpurendocrine.com"
         },
         {
             "id": "doc-05",
@@ -156,7 +164,9 @@ DEFAULT_DATA = {
             "address": "Golghar, Gorakhpur, UP",
             "availability": ["Wednesday", "Friday"],
             "prescriptionPotential": "High",
-            "preferredTime": "Morning (10:00 - 12:00)"
+            "preferredTime": "Morning (10:00 - 12:00)",
+            "phone": "+91 95456 78901",
+            "email": "harish.c@gorakhpurchildren.org"
         },
         {
             "id": "doc-06",
@@ -167,7 +177,9 @@ DEFAULT_DATA = {
             "address": "Gomti Nagar, Lucknow, UP",
             "availability": ["Tuesday", "Friday"],
             "prescriptionPotential": "Medium",
-            "preferredTime": "Afternoon (15:00 - 17:00)"
+            "preferredTime": "Afternoon (15:00 - 17:00)",
+            "phone": "+91 94567 89012",
+            "email": "neha.saxena@awadhheart.com"
         },
         {
             "id": "doc-07",
@@ -178,7 +190,9 @@ DEFAULT_DATA = {
             "address": "Civil Lines, Prayagraj, UP",
             "availability": ["Wednesday", "Thursday"],
             "prescriptionPotential": "High",
-            "preferredTime": "Afternoon (14:00 - 16:30)"
+            "preferredTime": "Afternoon (14:00 - 16:30)",
+            "phone": "+91 93678 90123",
+            "email": "skpathak@sangamdiagnostics.co.in"
         }
     ],
     "meetings": [
@@ -449,6 +463,74 @@ class RESTRequestHandler(http.server.SimpleHTTPRequestHandler):
             if meet:
                 meet["time"] = new_time
                 meet["status"] = "scheduled"
+                save_db(db)
+                self.send_response(200)
+            else:
+                self.send_response(404)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(db).encode('utf-8'))
+
+        elif url.path == '/api/doctors':
+            new_doc = {
+                "id": f"doc-{len(db['doctors']) + 1:02d}",
+                "name": req_body.get("name"),
+                "clinicName": req_body.get("clinicName"),
+                "specialty": req_body.get("specialty"),
+                "region": req_body.get("region"),
+                "address": req_body.get("address"),
+                "availability": req_body.get("availability", []),
+                "prescriptionPotential": req_body.get("prescriptionPotential", "Medium"),
+                "preferredTime": req_body.get("preferredTime"),
+                "phone": req_body.get("phone", ""),
+                "email": req_body.get("email", "")
+            }
+            while any(d["id"] == new_doc["id"] for d in db["doctors"]):
+                suffix = int(new_doc["id"].split('-')[1]) + 1
+                new_doc["id"] = f"doc-{suffix:02d}"
+                
+            db["doctors"].append(new_doc)
+            save_db(db)
+            
+            self.send_response(201)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(db).encode('utf-8'))
+
+        elif url.path == '/api/doctors/update':
+            doc_id = req_body.get("id")
+            doc = next((d for d in db["doctors"] if d["id"] == doc_id), None)
+            if doc:
+                doc["name"] = req_body.get("name", doc["name"])
+                doc["clinicName"] = req_body.get("clinicName", doc["clinicName"])
+                doc["specialty"] = req_body.get("specialty", doc["specialty"])
+                doc["region"] = req_body.get("region", doc["region"])
+                doc["address"] = req_body.get("address", doc["address"])
+                doc["availability"] = req_body.get("availability", doc["availability"])
+                doc["prescriptionPotential"] = req_body.get("prescriptionPotential", doc["prescriptionPotential"])
+                doc["preferredTime"] = req_body.get("preferredTime", doc["preferredTime"])
+                doc["phone"] = req_body.get("phone", doc["phone"])
+                doc["email"] = req_body.get("email", doc["email"])
+                save_db(db)
+                self.send_response(200)
+            else:
+                self.send_response(404)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(db).encode('utf-8'))
+
+        elif url.path == '/api/doctors/delete':
+            doc_id = req_body.get("id")
+            doc = next((d for d in db["doctors"] if d["id"] == doc_id), None)
+            if doc:
+                db["doctors"].remove(doc)
+                
+                # Automatically cancel active meetings for this doctor
+                for meet in db["meetings"]:
+                    if meet["doctorId"] == doc_id and meet["status"] in ["pending", "scheduled"]:
+                        meet["status"] = "cancelled"
+                        meet["notes"] = f"[System Alert] Meeting cancelled due to physician removal from CRM registry."
+                
                 save_db(db)
                 self.send_response(200)
             else:

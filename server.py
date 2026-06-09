@@ -232,6 +232,141 @@ DEFAULT_DATA = {
             "time": "14:00",
             "status": "completed",
             "notes": "Completed initial introduction of GlucoGuard 24hr monitoring. Doctor requested samples."
+        },
+        {
+            "id": "meet-h01",
+            "mrId": "mr-01",
+            "doctorId": "doc-01",
+            "date": "2026-06-01",
+            "time": "09:30",
+            "status": "completed",
+            "notes": "Discussed Cardiox-B dosing guidelines."
+        },
+        {
+            "id": "meet-h02",
+            "mrId": "mr-01",
+            "doctorId": "doc-06",
+            "date": "2026-06-03",
+            "time": "14:00",
+            "status": "completed",
+            "notes": "Follow-up on beta-blocker prescription guidelines."
+        },
+        {
+            "id": "meet-h03",
+            "mrId": "mr-01",
+            "doctorId": "doc-01",
+            "date": "2026-06-05",
+            "time": "11:00",
+            "status": "completed",
+            "notes": "Provided clinical trial booklet."
+        },
+        {
+            "id": "meet-h04",
+            "mrId": "mr-02",
+            "doctorId": "doc-02",
+            "date": "2026-06-01",
+            "time": "15:30",
+            "status": "completed",
+            "notes": "OncoMed-3 formulary presentation."
+        },
+        {
+            "id": "meet-h05",
+            "mrId": "mr-02",
+            "doctorId": "doc-02",
+            "date": "2026-06-04",
+            "time": "16:00",
+            "status": "completed",
+            "notes": "Delivered kinase inhibitor patient brochures."
+        },
+        {
+            "id": "meet-h06",
+            "mrId": "mr-02",
+            "doctorId": "doc-02",
+            "date": "2026-06-06",
+            "time": "13:30",
+            "status": "completed",
+            "notes": "Doctor feedback: positive response from chemotherapy trials."
+        },
+        {
+            "id": "meet-h07",
+            "mrId": "mr-03",
+            "doctorId": "doc-03",
+            "date": "2026-06-02",
+            "time": "10:00",
+            "status": "completed",
+            "notes": "Neuro injector setup instruction."
+        },
+        {
+            "id": "meet-h08",
+            "mrId": "mr-03",
+            "doctorId": "doc-03",
+            "date": "2026-06-04",
+            "time": "11:30",
+            "status": "completed",
+            "notes": "Supplied sample clinic injector kits."
+        },
+        {
+            "id": "meet-h09",
+            "mrId": "mr-03",
+            "doctorId": "doc-03",
+            "date": "2026-06-07",
+            "time": "09:00",
+            "status": "completed",
+            "notes": "Neuro-degenerative pipeline briefing."
+        },
+        {
+            "id": "meet-h10",
+            "mrId": "mr-04",
+            "doctorId": "doc-04",
+            "date": "2026-06-02",
+            "time": "14:30",
+            "status": "completed",
+            "notes": "Endocrine study review and samples handover."
+        },
+        {
+            "id": "meet-h11",
+            "mrId": "mr-05",
+            "doctorId": "doc-05",
+            "date": "2026-06-01",
+            "time": "10:30",
+            "status": "completed",
+            "notes": "Pediatric vaccine safety summary."
+        },
+        {
+            "id": "meet-h12",
+            "mrId": "mr-05",
+            "doctorId": "doc-05",
+            "date": "2026-06-03",
+            "time": "11:00",
+            "status": "completed",
+            "notes": "Delivered vaccine sample batch."
+        },
+        {
+            "id": "meet-h13",
+            "mrId": "mr-05",
+            "doctorId": "doc-05",
+            "date": "2026-06-05",
+            "time": "12:00",
+            "status": "completed",
+            "notes": "Clinic immunization record review."
+        },
+        {
+            "id": "meet-h14",
+            "mrId": "mr-06",
+            "doctorId": "doc-02",
+            "date": "2026-06-03",
+            "time": "15:00",
+            "status": "completed",
+            "notes": "Briefed on oncology research updates."
+        },
+        {
+            "id": "meet-h15",
+            "mrId": "mr-06",
+            "doctorId": "doc-02",
+            "date": "2026-06-05",
+            "time": "16:00",
+            "status": "completed",
+            "notes": "Oncology pipeline general sync."
         }
     ],
     "territories": [

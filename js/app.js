@@ -813,9 +813,11 @@ class App {
     // Destroy existing charts to prevent overlaps
     if (this.charts.sales) this.charts.sales.destroy();
     if (this.charts.share) this.charts.share.destroy();
+    if (this.charts.compliance) this.charts.compliance.destroy();
 
     const salesCtx = document.getElementById("salesTrendChart");
     const shareCtx = document.getElementById("categoryShareChart");
+    const complianceCtx = document.getElementById("mrComplianceChart");
     if (!salesCtx || !shareCtx) return;
 
     // Set standard Chart typography styles
@@ -895,6 +897,92 @@ class App {
         }
       }
     });
+
+    // Compliance Chart (Grouped Bar chart)
+    const TARGET_FREQUENCIES = {
+      "mr-01": 8, // Priya Sharma
+      "mr-02": 6, // Rajesh Kumar
+      "mr-03": 8, // Dr. Amit Patel
+      "mr-04": 5, // Vikram Singh
+      "mr-05": 10, // Ananya Gupta
+      "mr-06": 4  // Rahul Verma
+    };
+
+    const mrLabels = MR_DATA.map(mr => mr.name);
+    const targetData = MR_DATA.map(mr => TARGET_FREQUENCIES[mr.id] || 5);
+    const completedData = MR_DATA.map(mr => MEETINGS_DATA.filter(m => m.mrId === mr.id && m.status === "completed").length);
+    const scheduledData = MR_DATA.map(mr => MEETINGS_DATA.filter(m => m.mrId === mr.id && m.status === "scheduled").length);
+
+    if (complianceCtx) {
+      this.charts.compliance = new Chart(complianceCtx, {
+        type: 'bar',
+        data: {
+          labels: mrLabels,
+          datasets: [
+            {
+              label: 'Target Visits',
+              data: targetData,
+              backgroundColor: 'hsla(250, 95%, 68%, 0.2)',
+              borderColor: 'hsl(250, 95%, 68%)',
+              borderWidth: 1
+            },
+            {
+              label: 'Completed Visits',
+              data: completedData,
+              backgroundColor: 'hsla(150, 90%, 50%, 0.5)',
+              borderColor: 'hsl(150, 90%, 50%)',
+              borderWidth: 1
+            },
+            {
+              label: 'Scheduled Visits',
+              data: scheduledData,
+              backgroundColor: 'hsla(180, 100%, 45%, 0.4)',
+              borderColor: 'hsl(180, 100%, 45%)',
+              borderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 12,
+                padding: 10,
+                font: { size: 10 }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const mrIndex = context.dataIndex;
+                  const target = targetData[mrIndex];
+                  const completed = completedData[mrIndex];
+                  const ratio = ((completed / target) * 100).toFixed(0);
+                  
+                  if (context.datasetIndex === 0) {
+                    return `Target Frequency: ${target}`;
+                  } else if (context.datasetIndex === 1) {
+                    return `Completed: ${completed} (${ratio}% Compliance)`;
+                  } else {
+                    return `Scheduled: ${scheduledData[mrIndex]}`;
+                  }
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false } },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { stepSize: 2 }
+            }
+          }
+        }
+      });
+    }
   }
 
   renderReport(reportData) {

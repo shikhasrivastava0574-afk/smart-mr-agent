@@ -1,0 +1,322 @@
+/* css/agents.css */
+
+/* Agent Console Section */
+.agent-console-panel {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--header-height) - 64px); /* fill space */
+  gap: 16px;
+}
+
+/* Agent Network Grid - Visualizing the multi-agent coordination */
+.agent-network-grid {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.agent-network-grid::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: linear-gradient(to right, 
+    hsla(var(--agent-system), 0.2),
+    hsla(var(--agent-matching), 0.2),
+    hsla(var(--agent-scheduling), 0.2),
+    hsla(var(--agent-analytics), 0.2),
+    hsla(var(--agent-report), 0.2)
+  );
+  z-index: 1;
+}
+
+.agent-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+  position: relative;
+  cursor: pointer;
+}
+
+.agent-node-sphere {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: hsl(var(--bg-surface-elevated));
+  border: 2px solid hsl(var(--text-muted));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: hsl(var(--text-secondary));
+  transition: var(--transition-smooth);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Active thinking states for agents */
+.agent-node.active .agent-node-sphere {
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.agent-node[data-agent="system"].active .agent-node-sphere {
+  border-color: hsl(var(--agent-system));
+  box-shadow: 0 0 20px hsla(var(--agent-system), 0.6);
+  background: hsla(var(--agent-system), 0.2);
+}
+
+.agent-node[data-agent="matching"].active .agent-node-sphere {
+  border-color: hsl(var(--agent-matching));
+  box-shadow: 0 0 20px hsla(var(--agent-matching), 0.6);
+  background: hsla(var(--agent-matching), 0.2);
+}
+
+.agent-node[data-agent="scheduling"].active .agent-node-sphere {
+  border-color: hsl(var(--agent-scheduling));
+  box-shadow: 0 0 20px hsla(var(--agent-scheduling), 0.6);
+  background: hsla(var(--agent-scheduling), 0.2);
+}
+
+.agent-node[data-agent="analytics"].active .agent-node-sphere {
+  border-color: hsl(var(--agent-analytics));
+  box-shadow: 0 0 20px hsla(var(--agent-analytics), 0.6);
+  background: hsla(var(--agent-analytics), 0.2);
+}
+
+.agent-node[data-agent="report"].active .agent-node-sphere {
+  border-color: hsl(var(--agent-report));
+  box-shadow: 0 0 20px hsla(var(--agent-report), 0.6);
+  background: hsla(var(--agent-report), 0.2);
+}
+
+.agent-node[data-agent="comm"].active .agent-node-sphere {
+  border-color: #25D366;
+  box-shadow: 0 0 20px rgba(37, 211, 102, 0.6);
+  background: rgba(37, 211, 102, 0.2);
+}
+
+.agent-node-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: hsl(var(--text-muted));
+  transition: var(--transition-smooth);
+}
+
+.agent-node.active .agent-node-name {
+  color: hsl(var(--text-primary));
+}
+
+.agent-node-status {
+  font-size: 0.65rem;
+  color: hsl(var(--text-muted));
+  background: rgba(255, 255, 255, 0.03);
+  padding: 2px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+}
+
+.agent-node.active .agent-node-status {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Terminal Log Console */
+.terminal-console {
+  flex-grow: 1;
+  background: #04060f;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8), 0 8px 32px rgba(0,0,0,0.5);
+}
+
+.terminal-header {
+  background: #080d1a;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.terminal-title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: hsl(var(--text-secondary));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.terminal-window-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #27272a;
+}
+
+.dot.red { background: hsl(var(--color-danger)); }
+.dot.yellow { background: hsl(var(--color-warning)); }
+.dot.green { background: hsl(var(--color-success)); }
+
+/* Log Screen */
+.terminal-screen {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  line-height: 1.4;
+}
+
+.log-entry {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  animation: logFadeIn 0.2s ease-out forwards;
+}
+
+@keyframes logFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.log-timestamp {
+  color: hsl(var(--text-muted));
+  flex-shrink: 0;
+}
+
+.log-sender {
+  font-weight: 700;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+/* Sender Styles */
+.sender-system { color: hsl(var(--agent-system)); }
+.sender-matching { color: hsl(var(--agent-matching)); }
+.sender-scheduling { color: hsl(var(--agent-scheduling)); }
+.sender-analytics { color: hsl(var(--agent-analytics)); }
+.sender-report { color: hsl(var(--agent-report)); }
+.sender-comm { color: #25D366; }
+.sender-user { color: #ffffff; }
+
+.log-message {
+  color: hsl(var(--text-secondary));
+  word-break: break-word;
+}
+
+.log-entry.user-command .log-message {
+  color: #fff;
+  font-weight: 500;
+}
+
+.log-entry.thinking-state {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.typing-indicator {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding-left: 4px;
+}
+
+.typing-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: hsl(var(--text-secondary));
+  animation: typingBounce 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-4px); }
+}
+
+/* Terminal Input Bar */
+.terminal-input-bar {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #060914;
+  border-top: 1px solid var(--border-color);
+  gap: 12px;
+}
+
+.prompt-symbol {
+  color: hsl(var(--agent-system));
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.terminal-form {
+  display: flex;
+  flex-grow: 1;
+  gap: 8px;
+}
+
+.terminal-input {
+  flex-grow: 1;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.terminal-input::placeholder {
+  color: hsl(var(--text-muted));
+}
+
+.terminal-submit-btn {
+  background: transparent;
+  border: none;
+  color: hsl(var(--text-secondary));
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast);
+}
+
+.terminal-submit-btn:hover {
+  color: hsl(var(--agent-system));
+  transform: scale(1.1);
+}

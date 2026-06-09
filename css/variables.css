@@ -1,0 +1,63 @@
+/* css/variables.css */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  /* Fonts */
+  --font-primary: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Base HSL Colors */
+  --bg-base: 222 47% 6%;         /* #060814 */
+  --bg-surface: 223 47% 11%;     /* #0c1024 */
+  --bg-surface-elevated: 223 47% 16%; /* #131936 */
+  
+  --border-color: 223 40% 20%;   /* subtle border */
+  --border-glow: 223 45% 28%;
+  
+  --text-primary: 210 40% 98%;   /* near white */
+  --text-secondary: 215 20% 65%; /* slate grey */
+  --text-muted: 217 15% 45%;     /* dark grey */
+
+  /* Agent Accent Themes (HSL) */
+  /* 1. System Coordinator (Blue) */
+  --agent-system: 217 91% 60%;
+  --agent-system-glow: 217 91% 60% / 0.15;
+  
+  /* 2. Matching Agent (Cyan) */
+  --agent-matching: 180 100% 45%;
+  --agent-matching-glow: 180 100% 45% / 0.15;
+
+  /* 3. Scheduling Agent (Indigo) */
+  --agent-scheduling: 250 95% 68%;
+  --agent-scheduling-glow: 250 95% 68% / 0.15;
+
+  /* 4. Analytics Agent (Emerald) */
+  --agent-analytics: 150 90% 50%;
+  --agent-analytics-glow: 150 90% 50% / 0.15;
+
+  /* 5. Report Generation Agent (Fuchsia) */
+  --agent-report: 300 95% 60%;
+  --agent-report-glow: 300 95% 60% / 0.15;
+
+  /* Status Colors */
+  --color-success: 142 70% 50%;
+  --color-warning: 38 92% 50%;
+  --color-danger: 350 89% 60%;
+  --color-info: 199 89% 48%;
+
+  /* Layout Constants */
+  --sidebar-width: 280px;
+  --terminal-height: 280px;
+  --header-height: 70px;
+  
+  /* Glassmorphism Details */
+  --glass-bg: rgba(12, 16, 36, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  --glass-blur: 16px;
+
+  /* Animation Easings */
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}

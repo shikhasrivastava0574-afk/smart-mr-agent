@@ -1,0 +1,6 @@
+# Local database
+database.json
+
+# OS files
+.DS_Store
+Thumbs.db

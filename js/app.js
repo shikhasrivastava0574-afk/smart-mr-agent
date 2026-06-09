@@ -911,7 +911,7 @@ class App {
     const mrLabels = MR_DATA.map(mr => mr.name);
     const targetData = MR_DATA.map(mr => TARGET_FREQUENCIES[mr.id] || 5);
     const completedData = MR_DATA.map(mr => MEETINGS_DATA.filter(m => m.mrId === mr.id && m.status === "completed").length);
-    const scheduledData = MR_DATA.map(mr => MEETINGS_DATA.filter(m => m.mrId === mr.id && m.status === "scheduled").length);
+    const scheduledData = MR_DATA.map(mr => MEETINGS_DATA.filter(m => m.mrId === mr.id && (m.status === "scheduled" || m.status === "pending")).length);
 
     if (complianceCtx) {
       this.charts.compliance = new Chart(complianceCtx, {

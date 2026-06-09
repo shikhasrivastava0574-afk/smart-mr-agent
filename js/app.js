@@ -528,6 +528,17 @@ class App {
       });
     }
 
+    // 14.b AI Expansion Simulator Form Submit
+    const simForm = document.getElementById("expansion-simulator-form");
+    if (simForm) {
+      simForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const region = document.getElementById("simulation-region-select").value;
+        const mrCount = parseInt(document.getElementById("simulation-rep-count").value) || 0;
+        this.simulateExpansion(region, mrCount);
+      });
+    }
+
     // 15. Notification Dropdown toggle
     const bellBtn = document.getElementById("notification-bell-btn");
     const dropdown = document.getElementById("notification-dropdown");
@@ -1023,6 +1034,89 @@ class App {
         }
       });
     }
+  }
+
+  simulateExpansion(region, mrCount) {
+    this.console.writeLog("Analytics Agent", `Running predictive expansion regression for region [${region}] with ${mrCount} deployed MRs...`, "sender-analytics");
+    this.console.writeLog("Analytics Agent", `Loading historical region density index, therapeutic area profile, and competitor coefficients.`, "sender-analytics");
+    this.console.writeLog("Analytics Agent", `Calculating projected customer acquisition cost (CAC) and 6-month sales growth trajectory...`, "sender-analytics");
+
+    const regionProfiles = {
+      "Agra": { docsCount: 22, demandMultiplier: 1.4, competitorCoefficient: 0.8 },
+      "Prayagraj": { docsCount: 16, demandMultiplier: 1.1, competitorCoefficient: 0.85 },
+      "Jhansi": { docsCount: 12, demandMultiplier: 0.9, competitorCoefficient: 0.9 },
+      "Meerut": { docsCount: 19, demandMultiplier: 1.25, competitorCoefficient: 0.75 },
+      "Bareilly": { docsCount: 14, demandMultiplier: 1.05, competitorCoefficient: 0.88 },
+      "Aligarh": { docsCount: 11, demandMultiplier: 0.85, competitorCoefficient: 0.92 }
+    };
+
+    const profile = regionProfiles[region] || { docsCount: 15, demandMultiplier: 1.0, competitorCoefficient: 0.85 };
+    const baseCac = mrCount * 65000;
+    const repMultiplier = Math.log(mrCount + 1) * 1.5;
+    const baseSalesGrowth = profile.docsCount * profile.demandMultiplier * profile.competitorCoefficient * 35000 * repMultiplier;
+    
+    const months = ["Month 1", "Month 2", "Month 3", "Month 4", "Month 5", "Month 6"];
+    const salesData = [];
+    for (let m = 1; m <= 6; m++) {
+      const monthlySales = Math.floor(baseSalesGrowth * (1 - Math.exp(-0.6 * m)));
+      salesData.push(monthlySales);
+    }
+    
+    const finalProjectedSales = salesData[5];
+    const totalSixMonthSales = salesData.reduce((a, b) => a + b, 0);
+    const roi = Math.max(0, Math.floor(((totalSixMonthSales - baseCac) / baseCac) * 100));
+
+    const outputDiv = document.getElementById("simulation-output");
+    if (outputDiv) outputDiv.style.display = "block";
+
+    document.getElementById("sim-proj-sales").textContent = `₹${finalProjectedSales.toLocaleString('en-IN')}`;
+    document.getElementById("sim-proj-cac").textContent = `₹${baseCac.toLocaleString('en-IN')}`;
+    document.getElementById("sim-proj-roi").textContent = `${roi}%`;
+
+    const expansionCtx = document.getElementById("expansionForecastChart");
+    if (expansionCtx) {
+      if (this.charts.expansion) {
+        this.charts.expansion.destroy();
+      }
+      
+      this.charts.expansion = new Chart(expansionCtx, {
+        type: 'line',
+        data: {
+          labels: months,
+          datasets: [{
+            label: 'Projected Sales Growth (₹)',
+            data: salesData,
+            borderColor: 'hsl(180, 100%, 45%)',
+            backgroundColor: 'rgba(6, 182, 212, 0.15)',
+            fill: true,
+            tension: 0.4,
+            borderWidth: 2,
+            pointRadius: 4,
+            pointBackgroundColor: 'hsl(250, 95%, 68%)'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: { grid: { display: false } },
+            y: { 
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: {
+                callback: function(value) {
+                  return '₹' + (value / 1000) + 'K';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    this.console.writeLog("Analytics Agent", `Simulation complete. 6-month projected cumulative revenue: ₹${totalSixMonthSales.toLocaleString('en-IN')}, ROI: ${roi}%.`, "sender-analytics");
   }
 
   renderReport(reportData) {
@@ -2017,6 +2111,10 @@ class App {
       return `
         <div class="doc-card ${isSelected}" data-doc-id="${doc.id}">
           <span class="badge-potential ${potentialClass}">${doc.prescriptionPotential}</span>
+          <div class="engagement-badge-circle" style="position: absolute; top: 44px; right: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: rgba(30, 41, 59, 0.7); border: 2px solid hsla(var(--agent-analytics), 0.3); box-shadow: 0 0 10px hsla(var(--agent-analytics), 0.2); transition: all 0.3s ease;">
+            <span style="font-size: 0.65rem; font-weight: 700; color: hsl(var(--agent-analytics)); line-height: 1;">${doc.engagementScore || 0}%</span>
+            <span style="font-size: 0.4rem; font-weight: 600; color: hsl(var(--text-secondary)); text-transform: uppercase; margin-top: 1px;">Eng</span>
+          </div>
           <div class="doc-card-header">
             <div class="doc-avatar">${initials}</div>
             <div class="doc-meta">
@@ -2078,6 +2176,23 @@ class App {
       cb.checked = doc.availability.includes(cb.value);
     });
 
+    // Render engagement score breakdown
+    const scoreContainer = document.getElementById("doc-engagement-container");
+    if (scoreContainer) {
+      scoreContainer.style.display = "block";
+      const breakdown = doc.engagementBreakdown || { potential: 0, visits: 0, deals: 0, preferred: 0 };
+      document.getElementById("doc-engagement-badge").textContent = `${doc.engagementScore || 0}%`;
+      
+      document.getElementById("doc-breakdown-potential").textContent = `${breakdown.potential}/40`;
+      document.getElementById("doc-bar-potential").style.width = `${(breakdown.potential / 40) * 100}%`;
+      
+      document.getElementById("doc-breakdown-visits").textContent = `${breakdown.visits}/30`;
+      document.getElementById("doc-bar-visits").style.width = `${(breakdown.visits / 30) * 100}%`;
+      
+      document.getElementById("doc-breakdown-deals").textContent = `${breakdown.deals}/30`;
+      document.getElementById("doc-bar-deals").style.width = `${(breakdown.deals / 30) * 100}%`;
+    }
+
     // Update UI headers and display delete button
     document.getElementById("doctor-editor-title").textContent = "Edit Physician Profile";
     document.getElementById("doc-delete-btn").style.display = "flex";
@@ -2091,6 +2206,11 @@ class App {
     // Reset inputs
     document.getElementById("edit-doctor-id").value = "";
     document.getElementById("doctor-editor-form").reset();
+
+    const scoreContainer = document.getElementById("doc-engagement-container");
+    if (scoreContainer) {
+      scoreContainer.style.display = "none";
+    }
 
     // Reset checkboxes to checked by default
     const checkboxes = document.querySelectorAll("#doc-availability-checkboxes input");

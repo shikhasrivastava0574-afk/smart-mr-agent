@@ -6,8 +6,8 @@ import os
 import sqlite3
 from urllib.parse import urlparse
 
-PORT = 8000
-DB_FILE = 'database.db'
+PORT = int(os.environ.get("PORT", 8000))
+DB_FILE = os.environ.get("DATABASE_PATH", "database.db")
 
 # Default baseline dataset (matching js/data.js)
 DEFAULT_DATA = {
@@ -515,6 +515,7 @@ def init_db():
                 time TEXT,
                 status TEXT,
                 notes TEXT,
+                dealValue INTEGER DEFAULT 0,
                 FOREIGN KEY (mrId) REFERENCES mrs (id),
                 FOREIGN KEY (doctorId) REFERENCES doctors (id)
             )
@@ -568,9 +569,24 @@ def init_db():
                   doc["preferredTime"], doc["phone"], doc["email"]))
             
         for m in DEFAULT_DATA["meetings"]:
+            m_status = m["status"]
+            m_notes = m["notes"]
+            deal_val = 0
+            if m_status == "completed":
+                if "01" in m["doctorId"]:
+                    deal_val = 120000
+                elif "02" in m["doctorId"]:
+                    deal_val = 85000
+                elif "03" in m["doctorId"]:
+                    deal_val = 95000
+                elif "04" in m["doctorId"]:
+                    deal_val = 55000
+                else:
+                    deal_val = 45000
             cursor.execute('''
-                INSERT INTO meetings VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (m["id"], m["mrId"], m["doctorId"], m["date"], m["time"], m["status"], m["notes"]))
+                INSERT INTO meetings (id, mrId, doctorId, date, time, status, notes, dealValue)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (m["id"], m["mrId"], m["doctorId"], m["date"], m["time"], m_status, m_notes, deal_val))
             
         for t in DEFAULT_DATA["territories"]:
             cursor.execute('''
@@ -591,6 +607,32 @@ def init_db():
         conn.commit()
         conn.close()
         print("SQLite database created and seeded successfully.")
+    else:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(meetings)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if 'dealValue' not in columns:
+            try:
+                cursor.execute("ALTER TABLE meetings ADD COLUMN dealValue INTEGER DEFAULT 0")
+                cursor.execute("SELECT id, doctorId FROM meetings WHERE status = 'completed'")
+                completed_meets = cursor.fetchall()
+                for meet_id, doc_id in completed_meets:
+                    cursor.execute("SELECT prescriptionPotential FROM doctors WHERE id = ?", (doc_id,))
+                    pot_row = cursor.fetchone()
+                    pot = pot_row[0] if pot_row else "Medium"
+                    if pot == "High":
+                        deal = 120000
+                    elif pot == "Medium":
+                        deal = 65000
+                    else:
+                        deal = 25000
+                    cursor.execute("UPDATE meetings SET dealValue = ? WHERE id = ?", (deal, meet_id))
+                conn.commit()
+                print("Database migrated successfully: added dealValue to meetings.")
+            except Exception as e:
+                print(f"Database migration failed: {e}")
+        conn.close()
 
 def get_full_db():
     conn = sqlite3.connect(DB_FILE)
@@ -607,6 +649,37 @@ def get_full_db():
     for row in cursor.fetchall():
         d = dict(row)
         d["availability"] = json.loads(d["availability"])
+        
+        # Calculate dynamic engagementScore
+        doc_id = d["id"]
+        pot = d.get("prescriptionPotential", "Medium")
+        if pot == "High":
+            pot_score = 40
+        elif pot == "Medium":
+            pot_score = 25
+        else:
+            pot_score = 10
+            
+        cursor.execute("SELECT COUNT(*) FROM meetings WHERE doctorId = ? AND status = 'completed'", (doc_id,))
+        completed_count = cursor.fetchone()[0]
+        completed_score = min(30, completed_count * 10)
+        
+        cursor.execute("SELECT SUM(dealValue) FROM meetings WHERE doctorId = ? AND status = 'completed'", (doc_id,))
+        total_deals = cursor.fetchone()[0] or 0
+        deals_score = min(30, total_deals // 10000)
+        
+        pref_time = d.get("preferredTime")
+        pref_score = 10 if (pref_time and len(pref_time.strip()) > 0) else 0
+        
+        total_score = min(100, pot_score + completed_score + deals_score + pref_score)
+        
+        d["engagementScore"] = int(total_score)
+        d["engagementBreakdown"] = {
+            "potential": pot_score,
+            "visits": completed_score,
+            "deals": deals_score,
+            "preferred": pref_score
+        }
         doctors.append(d)
         
     # Fetch Meetings
@@ -753,10 +826,14 @@ class RESTRequestHandler(http.server.SimpleHTTPRequestHandler):
             
             if meeting_row:
                 mr_id = meeting_row[0]
+                doc_id = meeting_row[1]
                 notes_compiled = f"[Prescription Potential: {potential}] {notes or 'Product presentation completed successfully.'}"
                 
-                # Update meeting status
-                cursor.execute("UPDATE meetings SET status = 'completed', notes = ? WHERE id = ?", (notes_compiled, meet_id))
+                # Update meeting status and dealValue
+                cursor.execute("UPDATE meetings SET status = 'completed', notes = ?, dealValue = ? WHERE id = ?", (notes_compiled, deal_value, meet_id))
+                
+                # Also propagate updated potential to doctors table
+                cursor.execute("UPDATE doctors SET prescriptionPotential = ? WHERE id = ?", (potential, doc_id))
                 
                 # Update representative sales
                 cursor.execute("UPDATE mrs SET monthlySales = monthlySales + ? WHERE id = ?", (deal_value, mr_id))

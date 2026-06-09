@@ -52,9 +52,9 @@
       </nav>
       
       <div class="user-profile">
-        <div class="avatar-placeholder">AM</div>
+        <div class="avatar-placeholder">S</div>
         <div class="user-info">
-          <span class="user-name">Alex Miller</span>
+          <span class="user-name">Shikha</span>
           <span class="user-role">Pharma Director</span>
         </div>
       </div>
@@ -519,6 +519,67 @@
                   </button>
                 </form>
               </div>
+
+              <!-- AI Expansion Forecaster Panel -->
+              <div class="glass-panel" id="mr-expansion-forecaster">
+                <h3 class="section-title">
+                  <i data-lucide="trending-up" style="color: hsl(var(--agent-analytics));"></i>
+                  <span>AI Territory Expansion Predictor</span>
+                </h3>
+                <p style="font-size: 0.8rem; color: hsl(var(--text-secondary)); margin-bottom: 16px;">
+                  Simulate region expansion. Project 6-month growth curves, estimated ROI, and customer acquisition costs (CAC) using predictive modeling.
+                </p>
+
+                <form id="expansion-simulator-form" style="display: flex; flex-direction: column; gap: 12px;">
+                  <div class="form-group">
+                    <label for="simulation-region-select">Target Region</label>
+                    <select id="simulation-region-select" class="form-select" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; padding: 10px;" required>
+                      <option value="Agra">Agra (High Priority)</option>
+                      <option value="Prayagraj">Prayagraj</option>
+                      <option value="Jhansi">Jhansi</option>
+                      <option value="Meerut">Meerut</option>
+                      <option value="Bareilly">Bareilly</option>
+                      <option value="Aligarh">Aligarh</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="simulation-rep-count">Deploy Representatives (MRs)</label>
+                    <input type="number" id="simulation-rep-count" class="form-select" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; padding: 10px;" min="1" max="5" value="2" required>
+                  </div>
+
+                  <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, hsl(var(--agent-analytics)), hsl(var(--agent-matching))); box-shadow: 0 4px 15px hsla(var(--agent-analytics), 0.2); width: 100%; margin-top: 8px;">
+                    <i data-lucide="sparkles"></i> Run AI Simulation
+                  </button>
+                </form>
+
+                <!-- Simulation Output -->
+                <div id="simulation-output" style="display: none; margin-top: 20px; border-top: 1px solid var(--glass-border); padding-top: 16px;">
+                  <h4 style="font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; color: #fff; display: flex; align-items: center; gap: 6px;">
+                    <i data-lucide="bar-chart-2" style="width: 14px; height: 14px; color: hsl(var(--agent-analytics));"></i>
+                    Simulation Projections
+                  </h4>
+                  
+                  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;">
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 8px; text-align: center;">
+                      <span style="display: block; font-size: 0.65rem; color: hsl(var(--text-secondary));">Proj. Sales</span>
+                      <span id="sim-proj-sales" style="display: block; font-size: 0.8rem; font-weight: 700; color: #10b981;">₹0</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 8px; text-align: center;">
+                      <span style="display: block; font-size: 0.65rem; color: hsl(var(--text-secondary));">Est. CAC</span>
+                      <span id="sim-proj-cac" style="display: block; font-size: 0.8rem; font-weight: 700; color: #ef4444;">₹0</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 8px; text-align: center;">
+                      <span style="display: block; font-size: 0.65rem; color: hsl(var(--text-secondary));">Simulated ROI</span>
+                      <span id="sim-proj-roi" style="display: block; font-size: 0.8rem; font-weight: 700; color: #3b82f6;">0%</span>
+                    </div>
+                  </div>
+
+                  <div style="height: 150px; position: relative;">
+                    <canvas id="expansionForecastChart"></canvas>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -729,6 +790,51 @@
                     <label style="display: flex; align-items: center; gap: 6px; color: hsl(var(--text-secondary)); cursor: pointer;">
                       <input type="checkbox" value="Saturday"> Saturday
                     </label>
+                  </div>
+                </div>
+
+                <!-- Engagement Score Breakdown -->
+                <div id="doc-engagement-container" style="display: none; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 14px; margin-top: 8px; margin-bottom: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <span style="font-size: 0.85rem; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 6px;">
+                      <i data-lucide="zap" style="width: 16px; height: 16px; color: hsl(var(--agent-analytics)); fill: hsla(var(--agent-analytics), 0.2);"></i>
+                      AI Doctor Engagement Index
+                    </span>
+                    <span id="doc-engagement-badge" style="font-size: 0.95rem; font-weight: 700; color: hsl(var(--agent-analytics)); text-shadow: 0 0 10px hsla(var(--agent-analytics), 0.4);">
+                      --%
+                    </span>
+                  </div>
+                  
+                  <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.75rem;">
+                    <div>
+                      <div style="display: flex; justify-content: space-between; color: hsl(var(--text-secondary)); margin-bottom: 2px;">
+                        <span>Prescription Potential Index</span>
+                        <span id="doc-breakdown-potential">0/40</span>
+                      </div>
+                      <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
+                        <div id="doc-bar-potential" style="width: 0%; height: 100%; background: hsl(var(--agent-matching)); transition: width 0.3s ease;"></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div style="display: flex; justify-content: space-between; color: hsl(var(--text-secondary)); margin-bottom: 2px;">
+                        <span>Visit Frequency Index</span>
+                        <span id="doc-breakdown-visits">0/30</span>
+                      </div>
+                      <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
+                        <div id="doc-bar-visits" style="width: 0%; height: 100%; background: hsl(var(--agent-scheduling)); transition: width 0.3s ease;"></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div style="display: flex; justify-content: space-between; color: hsl(var(--text-secondary)); margin-bottom: 2px;">
+                        <span>Deal Value Index</span>
+                        <span id="doc-breakdown-deals">0/30</span>
+                      </div>
+                      <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
+                        <div id="doc-bar-deals" style="width: 0%; height: 100%; background: hsl(var(--agent-system)); transition: width 0.3s ease;"></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

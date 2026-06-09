@@ -50,6 +50,8 @@ class App {
         this.renderDoctorDirectory();
       }
 
+      this.renderRouteMap();
+
       return true;
     } catch (err) {
       console.error('Error syncing with server:', err);
@@ -161,6 +163,7 @@ class App {
         }
         phonePanel.classList.toggle("active");
         this.renderPhoneAgenda();
+        this.renderRouteMap();
         this.updateSimulatorLayout();
       });
     }
@@ -183,7 +186,50 @@ class App {
           const avatar = document.getElementById("phone-avatar-text");
           if (avatar) avatar.textContent = mr.name.split(" ").map(n => n[0]).join("");
         }
+        // Reset active tab to List View on representative switch
+        const tabListBtn = document.getElementById("phone-tab-list-btn");
+        const tabMapBtn = document.getElementById("phone-tab-map-btn");
+        const agendaListEl = document.getElementById("phone-agenda-list");
+        const routeMapViewEl = document.getElementById("phone-route-map-view");
+        if (tabListBtn && tabMapBtn && agendaListEl && routeMapViewEl) {
+          tabListBtn.classList.add("active");
+          tabMapBtn.classList.remove("active");
+          agendaListEl.style.display = "flex";
+          routeMapViewEl.style.display = "none";
+        }
         this.renderPhoneAgenda();
+        this.renderRouteMap();
+      });
+    }
+
+    // Phone List vs Route Map tab switcher
+    const tabListBtn = document.getElementById("phone-tab-list-btn");
+    const tabMapBtn = document.getElementById("phone-tab-map-btn");
+    const agendaListEl = document.getElementById("phone-agenda-list");
+    const routeMapViewEl = document.getElementById("phone-route-map-view");
+
+    if (tabListBtn && tabMapBtn && agendaListEl && routeMapViewEl) {
+      tabListBtn.addEventListener("click", () => {
+        tabListBtn.classList.add("active");
+        tabMapBtn.classList.remove("active");
+        agendaListEl.style.display = "flex";
+        routeMapViewEl.style.display = "none";
+      });
+
+      tabMapBtn.addEventListener("click", () => {
+        tabMapBtn.classList.add("active");
+        tabListBtn.classList.remove("active");
+        agendaListEl.style.display = "none";
+        routeMapViewEl.style.display = "block";
+        this.renderRouteMap();
+      });
+    }
+
+    // Phone Route Optimizer button
+    const optimizeBtn = document.getElementById("phone-route-optimize-btn");
+    if (optimizeBtn) {
+      optimizeBtn.addEventListener("click", () => {
+        this.optimizeRoute();
       });
     }
 
@@ -963,6 +1009,324 @@ class App {
   }
 
   // --- Phone Simulator Methods ---
+
+  getDoctorCoordinates(doc) {
+    // Deterministic lookup based on doctor ID/name to keep placements beautiful
+    const coordsMap = {
+      "doc-01": { x: 60, y: 50 },   // Lucknow Cardiology Institute
+      "doc-02": { x: 70, y: 40 },   // Noida Cancer Care & Research
+      "doc-03": { x: 170, y: 150 }, // Kashi Neuro Center
+      "doc-04": { x: 95, y: 115 },  // Kanpur Endocrine Hospital
+      "doc-05": { x: 150, y: 50 },  // Gorakhpur Children's Hospital
+      "doc-06": { x: 110, y: 90 },  // Awadh Heart Clinic (Lucknow)
+      "doc-07": { x: 130, y: 130 }  // Sangam Diagnostic Center (Prayagraj)
+    };
+
+    if (coordsMap[doc.id]) {
+      return coordsMap[doc.id];
+    }
+
+    // Hash doctor ID or name for deterministic custom doctor coords inside 30-210 (x), 30-170 (y)
+    let hash = 0;
+    const key = doc.id + (doc.name || "");
+    for (let i = 0; i < key.length; i++) {
+      hash = key.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const x = 30 + Math.abs(hash % 180);
+    const y = 30 + Math.abs((hash >> 8) % 140);
+    return { x, y };
+  }
+
+  renderRouteMap(optimizedSequence = null) {
+    const mapContainer = document.getElementById("phone-map-canvas-container");
+    const mrId = document.getElementById("phone-mr-selector")?.value;
+    if (!mapContainer || !mrId) return;
+
+    const mr = MR_DATA.find(m => m.id === mrId);
+    if (!mr) return;
+
+    // Filter meetings for today/current
+    let mrMeetings = MEETINGS_DATA.filter(m => m.mrId === mrId);
+
+    // If an optimized sequence is provided, use that order. Otherwise, sort by scheduled time.
+    if (optimizedSequence) {
+      mrMeetings = optimizedSequence;
+    } else {
+      mrMeetings.sort((a, b) => a.time.localeCompare(b.time));
+    }
+
+    // Check if meetings are chronological
+    let isOutOfOrder = false;
+    for (let i = 0; i < mrMeetings.length - 1; i++) {
+      if (mrMeetings[i].time.localeCompare(mrMeetings[i + 1].time) > 0) {
+        isOutOfOrder = true;
+        break;
+      }
+    }
+
+    const warningEl = document.getElementById("route-optimize-warning");
+    if (warningEl) {
+      if (isOutOfOrder) {
+        warningEl.style.display = "flex";
+        document.getElementById("route-optimize-warning-text").textContent = "Warning: Optimized path has chronological conflicts.";
+      } else {
+        warningEl.style.display = "none";
+      }
+    }
+
+    // Base coordinate
+    const baseCoord = { x: 30, y: 170 }; // Start bottom-left
+
+    if (mrMeetings.length === 0) {
+      mapContainer.innerHTML = `
+        <div style="text-align: center; color: #64748b; padding: 60px 0; font-size: 0.8rem;">
+          <i data-lucide="map" style="width: 28px; height: 28px; margin-bottom: 8px; opacity: 0.5; display: inline-block;"></i>
+          <p>No map route. No visits scheduled.</p>
+        </div>
+      `;
+      lucide.createIcons();
+      // Reset stats
+      document.getElementById("route-stat-distance").textContent = "0.0 km";
+      document.getElementById("route-stat-duration").textContent = "0 min";
+      document.getElementById("route-stat-carbon").textContent = "0.0 kg";
+      return;
+    }
+
+    // Generate points
+    const points = [baseCoord];
+    const meetingDetails = [];
+
+    mrMeetings.forEach(meet => {
+      const doc = DOCTORS_DATA.find(d => d.id === meet.doctorId);
+      if (doc) {
+        const coords = this.getDoctorCoordinates(doc);
+        points.push(coords);
+        meetingDetails.push({
+          meet,
+          doc,
+          coords
+        });
+      }
+    });
+
+    // Compute total distance (scaled Euclidean distance)
+    let totalDistVal = 0;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const dx = p1.x - p2.x;
+      const dy = p1.y - p2.y;
+      const pixelDist = Math.sqrt(dx * dx + dy * dy);
+      // Let's scale: 10 pixels = 1.5 km
+      totalDistVal += pixelDist * 0.15;
+    }
+
+    // Add return trip to base for round trip distance calculation
+    if (points.length > 1) {
+      const lastPt = points[points.length - 1];
+      const dx = lastPt.x - baseCoord.x;
+      const dy = lastPt.y - baseCoord.y;
+      totalDistVal += Math.sqrt(dx * dx + dy * dy) * 0.15;
+    }
+
+    const distanceStr = totalDistVal.toFixed(1) + " km";
+    const durationMins = Math.round(totalDistVal * 3); // Approx 3 mins per km in city traffic
+    const durationStr = durationMins + " mins";
+    const co2SavedVal = totalDistVal * 0.12;
+    const carbonStr = co2SavedVal.toFixed(1) + " kg";
+
+    document.getElementById("route-stat-distance").textContent = distanceStr;
+    document.getElementById("route-stat-duration").textContent = durationStr;
+    document.getElementById("route-stat-carbon").textContent = carbonStr;
+
+    // Generate SVG path line coordinate string
+    let pathD = `M ${baseCoord.x} ${baseCoord.y}`;
+    for (let i = 1; i < points.length; i++) {
+      pathD += ` L ${points[i].x} ${points[i].y}`;
+    }
+    // Return path
+    pathD += ` L ${baseCoord.x} ${baseCoord.y}`;
+
+    // SVG elements
+    const width = 240;
+    const height = 200;
+
+    // Generate background grids
+    let gridsHtml = "";
+    for (let i = 20; i < width; i += 20) {
+      gridsHtml += `<line class="map-grid-line" x1="${i}" y1="0" x2="${i}" y2="${height}" />`;
+    }
+    for (let i = 20; i < height; i += 20) {
+      gridsHtml += `<line class="map-grid-line" x1="0" y1="${i}" x2="${width}" y2="${i}" />`;
+    }
+
+    // Generate background roads (aesthetic grid of streets)
+    const roads = [
+      { x1: 10, y1: 30, x2: 230, y2: 30 },
+      { x1: 10, y1: 100, x2: 230, y2: 100 },
+      { x1: 10, y1: 170, x2: 230, y2: 170 },
+      { x1: 40, y1: 10, x2: 40, y2: 190 },
+      { x1: 120, y1: 10, x2: 120, y2: 190 },
+      { x1: 190, y1: 10, x2: 190, y2: 190 }
+    ];
+
+    let roadsHtml = roads.map(r => `
+      <line class="map-road" x1="${r.x1}" y1="${r.y1}" x2="${r.x2}" y2="${r.y2}" />
+      <line class="map-road-inner" x1="${r.x1}" y1="${r.y1}" x2="${r.x2}" y2="${r.y2}" />
+    `).join("");
+
+    // Generate stop pins
+    const pinsHtml = meetingDetails.map((det, index) => {
+      const isCompleted = det.meet.status === "completed";
+      const isCancelled = det.meet.status === "cancelled";
+      
+      let dotColor = "#00f0ff";
+      let pulseColor = "rgba(0, 240, 255, 0.4)";
+
+      if (isCompleted) {
+        dotColor = "#25D366";
+        pulseColor = "rgba(37, 211, 102, 0.4)";
+      } else if (isCancelled) {
+        dotColor = "#718096";
+        pulseColor = "rgba(113, 128, 150, 0.2)";
+      } else if (index === 0) {
+        // Next active visit glows gold
+        dotColor = "#f59e0b";
+        pulseColor = "rgba(245, 158, 11, 0.5)";
+      }
+
+      return `
+        <g style="cursor: pointer;" onclick="window.appInstance.beginPhoneVisit('${det.meet.id}')">
+          <!-- Pulse animation ring -->
+          <circle class="map-pin-pulse" cx="${det.coords.x}" cy="${det.coords.y}" r="8" fill="${pulseColor}" />
+          <!-- Pin body -->
+          <circle cx="${det.coords.x}" cy="${det.coords.y}" r="6" fill="${dotColor}" stroke="#fff" stroke-width="1.5" />
+          <!-- Stop number -->
+          <text x="${det.coords.x}" y="${det.coords.y - 10}" fill="#fff" font-size="8" font-weight="700" text-anchor="middle" style="text-shadow: 0 1px 3px #000;">
+            Stop ${index + 1}
+          </text>
+          <!-- Tooltip label -->
+          <title>${det.doc.name} (${det.meet.time}) - ${det.doc.clinicName}</title>
+        </g>
+      `;
+    }).join("");
+
+    // Base point rendering
+    const basePinHtml = `
+      <g>
+        <circle cx="${baseCoord.x}" cy="${baseCoord.y}" r="8" fill="hsl(var(--agent-system))" stroke="#fff" stroke-width="1.5" />
+        <path d="M ${baseCoord.x - 4} ${baseCoord.y + 2} L ${baseCoord.x} ${baseCoord.y - 4} L ${baseCoord.x + 4} ${baseCoord.y + 2} Z" fill="#fff" />
+        <text x="${baseCoord.x}" y="${baseCoord.y - 12}" fill="hsl(var(--agent-system))" font-size="8" font-weight="700" text-anchor="middle" style="text-shadow: 0 1px 3px #000;">
+          HQ Base
+        </text>
+        <title>MR Home Base</title>
+      </g>
+    `;
+
+    mapContainer.innerHTML = `
+      <svg viewBox="0 0 ${width} ${height}" class="phone-map-svg">
+        <defs>
+          <radialGradient id="mapBgGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#1e293b" />
+            <stop offset="100%" stop-color="#0b0f19" />
+          </radialGradient>
+        </defs>
+        
+        <!-- Map Background -->
+        <rect width="100%" height="100%" fill="url(#mapBgGrad)" />
+        
+        <!-- Grid -->
+        ${gridsHtml}
+        
+        <!-- Roads -->
+        ${roadsHtml}
+        
+        <!-- Route Line (Base Path) -->
+        <path class="map-route-line" d="${pathD}" />
+        
+        <!-- Route Traffic Animation Flow -->
+        <path class="map-route-flow" d="${pathD}" />
+        
+        <!-- Base Marker -->
+        ${basePinHtml}
+        
+        <!-- Clinic Markers -->
+        ${pinsHtml}
+      </svg>
+    `;
+
+    // Make appInstance globally accessible in window so SVG onclick works
+    window.appInstance = this;
+    lucide.createIcons();
+  }
+
+  optimizeRoute() {
+    const mrId = document.getElementById("phone-mr-selector")?.value;
+    if (!mrId) return;
+
+    const mr = MR_DATA.find(m => m.id === mrId);
+    if (!mr) return;
+
+    let mrMeetings = MEETINGS_DATA.filter(m => m.mrId === mrId);
+    if (mrMeetings.length <= 1) {
+      alert("At least 2 scheduled visits are required to perform path optimization.");
+      return;
+    }
+
+    // Log terminal messages
+    this.console.writeLog("System", `Optimizing route matrix for representative ${mr.name}...`, "sender-system");
+    this.console.writeLog("Scheduling Agent", `Analyzing clinic travel coordinates and road traffic vectors...`, "sender-scheduling");
+
+    // Perform Traveling Salesperson (Nearest Neighbor) from base coordinate (30, 170)
+    const baseCoord = { x: 30, y: 170 };
+    
+    // Create copy of meetings to sort
+    const unvisited = mrMeetings.map(meet => {
+      const doc = DOCTORS_DATA.find(d => d.id === meet.doctorId);
+      const coords = this.getDoctorCoordinates(doc);
+      return { meet, coords };
+    });
+
+    const optimized = [];
+    let currentCoord = baseCoord;
+
+    while (unvisited.length > 0) {
+      // Find nearest neighbor
+      let minIndex = 0;
+      let minDistance = Infinity;
+
+      for (let i = 0; i < unvisited.length; i++) {
+        const dx = unvisited[i].coords.x - currentCoord.x;
+        const dy = unvisited[i].coords.y - currentCoord.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < minDistance) {
+          minDistance = dist;
+          minIndex = i;
+        }
+      }
+
+      // Add to optimized list
+      const nextNode = unvisited.splice(minIndex, 1)[0];
+      optimized.push(nextNode.meet);
+      currentCoord = nextNode.coords;
+    }
+
+    // Log sequence
+    const stopNames = optimized.map((meet, idx) => {
+      const doc = DOCTORS_DATA.find(d => d.id === meet.doctorId);
+      return `Stop ${idx + 1}: ${doc?.name || 'Unknown'}`;
+    }).join(" -> ");
+    
+    this.console.writeLog("Scheduling Agent", `Calculated optimal sequence: Base -> ${stopNames}. Commute overhead minimized.`, "sender-scheduling");
+
+    // Re-render map using the optimized sequence
+    this.renderRouteMap(optimized);
+
+    // Visual feedback
+    if (window.confetti) {
+      window.confetti({ particleCount: 40, spread: 30, origin: { y: 0.8 } });
+    }
+  }
 
   renderPhoneAgenda() {
     const agendaList = document.getElementById("phone-agenda-list");

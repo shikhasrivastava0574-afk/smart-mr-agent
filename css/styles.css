@@ -1455,3 +1455,165 @@ table.data-table tr:hover td {
   border: 1px solid rgba(100, 116, 139, 0.3);
   color: #94a3b8;
 }
+
+/* --- Mobile Route Map Simulator --- */
+.phone-tabs-row {
+  display: flex;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 2px;
+  margin-bottom: 14px;
+}
+
+.phone-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.phone-tab-btn.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.phone-map-container {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.phone-map-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.map-grid-line {
+  stroke: rgba(255, 255, 255, 0.02);
+  stroke-width: 1;
+}
+
+.map-road {
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.map-road-inner {
+  stroke: rgba(15, 23, 42, 0.5);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.map-route-line {
+  stroke: hsla(var(--agent-matching), 0.4);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.map-route-flow {
+  stroke: #60a5fa;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 6, 12;
+  animation: traffic-flow-dash 2s linear infinite;
+  fill: none;
+}
+
+@keyframes traffic-flow-dash {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+
+.map-pin-pulse {
+  animation: pin-glowing-pulse 2s infinite ease-in-out;
+}
+
+@keyframes pin-glowing-pulse {
+  0%, 100% {
+    r: 5;
+    opacity: 0.8;
+  }
+  50% {
+    r: 9;
+    opacity: 0.3;
+  }
+}
+
+/* Glassmorphic Map Legend/Overlay Card */
+.phone-route-details-card {
+  background: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.route-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.route-stat-val {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.route-stat-label {
+  font-size: 0.6rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.phone-route-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.phone-optimization-notice {
+  font-size: 0.7rem;
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(245, 158, 11, 0.1);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(245, 158, 11, 0.15);
+}
+

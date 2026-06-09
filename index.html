@@ -760,8 +760,54 @@
             <!-- Screen 1: Agenda List (default) -->
             <div id="phone-screen-agenda" class="phone-screen-view active">
               <h4 class="phone-section-title">Today's Visits</h4>
+              
+              <!-- Tab toggler -->
+              <div class="phone-tabs-row">
+                <button type="button" id="phone-tab-list-btn" class="phone-tab-btn active">
+                  <i data-lucide="list" style="width: 12px; height: 12px;"></i> List View
+                </button>
+                <button type="button" id="phone-tab-map-btn" class="phone-tab-btn">
+                  <i data-lucide="map" style="width: 12px; height: 12px;"></i> Route Map
+                </button>
+              </div>
+
+              <!-- List View Container -->
               <div id="phone-agenda-list" class="phone-agenda-list">
                 <!-- Agenda items injected dynamically -->
+              </div>
+
+              <!-- Route Map View Container (hidden by default) -->
+              <div id="phone-route-map-view" style="display: none; animation: phoneFadeIn 0.3s ease-out forwards;">
+                <div class="phone-map-container" id="phone-map-canvas-container">
+                  <!-- Dynamic SVG map injected here -->
+                </div>
+                
+                <!-- Stat overlays -->
+                <div class="phone-route-details-card">
+                  <div class="route-stat-item">
+                    <span class="route-stat-val" id="route-stat-distance">0.0 km</span>
+                    <span class="route-stat-label">Commute</span>
+                  </div>
+                  <div class="route-stat-item">
+                    <span class="route-stat-val" id="route-stat-duration">0 min</span>
+                    <span class="route-stat-label">Duration</span>
+                  </div>
+                  <div class="route-stat-item">
+                    <span class="route-stat-val" id="route-stat-carbon">0.0 kg</span>
+                    <span class="route-stat-label">CO2 Saved</span>
+                  </div>
+                </div>
+
+                <div class="phone-route-actions">
+                  <div class="phone-optimization-notice" id="route-optimize-warning" style="display: none; margin-bottom: 8px;">
+                    <i data-lucide="alert-triangle" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+                    <span id="route-optimize-warning-text">Commute sequence out of chronological order.</span>
+                  </div>
+                  
+                  <button type="button" id="phone-route-optimize-btn" class="btn btn-accent-matching" style="padding: 8px; font-size: 0.8rem; width: 100%; font-weight: 700; color: #000; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    <i data-lucide="navigation-2" style="width: 14px; height: 14px;"></i> Optimize Commute Path
+                  </button>
+                </div>
               </div>
             </div>
             

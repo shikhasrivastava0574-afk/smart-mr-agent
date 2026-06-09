@@ -417,6 +417,9 @@ class App {
         } catch (err) {
           this.console.writeLog("System", `Error saving physician: ${err.message}`, "sender-system");
         }
+      });
+    }
+
     // 14. Representative Territory Reassignment
     const reassignForm = document.getElementById("mr-reassign-form");
     if (reassignForm) {

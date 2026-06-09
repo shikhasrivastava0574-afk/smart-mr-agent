@@ -1,5 +1,6 @@
 # Local database
 database.json
+database.db
 
 # OS files
 .DS_Store

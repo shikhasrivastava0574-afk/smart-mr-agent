@@ -3,10 +3,11 @@ import http.server
 import socketserver
 import json
 import os
+import sqlite3
 from urllib.parse import urlparse
 
 PORT = 8000
-DB_FILE = 'database.json'
+DB_FILE = 'database.db'
 
 # Default baseline dataset (matching js/data.js)
 DEFAULT_DATA = {
@@ -330,24 +331,186 @@ DEFAULT_DATA = {
     ]
 }
 
-def load_db():
+def init_db():
     if not os.path.exists(DB_FILE):
-        with open(DB_FILE, 'w') as f:
-            json.dump(DEFAULT_DATA, f, indent=4)
-        return DEFAULT_DATA
-    try:
-        with open(DB_FILE, 'r') as f:
-            return json.load(f)
-    except Exception:
-        return DEFAULT_DATA
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # 1. Create tables
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS mrs (
+                id TEXT PRIMARY KEY,
+                name TEXT,
+                specialty TEXT,
+                experienceYears INTEGER,
+                rating REAL,
+                territory TEXT,
+                status TEXT,
+                doctorRelationships INTEGER,
+                monthlySales INTEGER,
+                email TEXT,
+                phone TEXT,
+                bio TEXT,
+                colorTheme TEXT
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS doctors (
+                id TEXT PRIMARY KEY,
+                name TEXT,
+                clinicName TEXT,
+                specialty TEXT,
+                region TEXT,
+                address TEXT,
+                availability TEXT, -- JSON array
+                prescriptionPotential TEXT,
+                preferredTime TEXT,
+                phone TEXT,
+                email TEXT
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS meetings (
+                id TEXT PRIMARY KEY,
+                mrId TEXT,
+                doctorId TEXT,
+                date TEXT,
+                time TEXT,
+                status TEXT,
+                notes TEXT,
+                FOREIGN KEY (mrId) REFERENCES mrs (id),
+                FOREIGN KEY (doctorId) REFERENCES doctors (id)
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS territories (
+                id TEXT PRIMARY KEY,
+                name TEXT,
+                doctorsCount INTEGER,
+                mrCount INTEGER,
+                competitorStrength TEXT,
+                marketDemand TEXT,
+                estimatedROI INTEGER,
+                topTherapeuticArea TEXT,
+                description TEXT
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS products (
+                id TEXT PRIMARY KEY,
+                name TEXT,
+                specialty TEXT,
+                description TEXT
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS sales_metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                monthlyTotalSales TEXT, -- JSON array
+                months TEXT, -- JSON array
+                categoryShare TEXT -- JSON object
+            )
+        ''')
+        
+        # 2. Seed default data
+        for mr in DEFAULT_DATA["mrs"]:
+            cursor.execute('''
+                INSERT INTO mrs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (mr["id"], mr["name"], mr["specialty"], mr["experienceYears"], mr["rating"], 
+                  mr["territory"], mr["status"], mr["doctorRelationships"], mr["monthlySales"], 
+                  mr["email"], mr["phone"], mr["bio"], mr["colorTheme"]))
+            
+        for doc in DEFAULT_DATA["doctors"]:
+            cursor.execute('''
+                INSERT INTO doctors VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (doc["id"], doc["name"], doc["clinicName"], doc["specialty"], doc["region"], 
+                  doc["address"], json.dumps(doc["availability"]), doc["prescriptionPotential"], 
+                  doc["preferredTime"], doc["phone"], doc["email"]))
+            
+        for m in DEFAULT_DATA["meetings"]:
+            cursor.execute('''
+                INSERT INTO meetings VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (m["id"], m["mrId"], m["doctorId"], m["date"], m["time"], m["status"], m["notes"]))
+            
+        for t in DEFAULT_DATA["territories"]:
+            cursor.execute('''
+                INSERT INTO territories VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (t["id"], t["name"], t["doctorsCount"], t["mrCount"], t["competitorStrength"], 
+                  t["marketDemand"], t["estimatedROI"], t["topTherapeuticArea"], t["description"]))
+            
+        for p in DEFAULT_DATA["products"]:
+            cursor.execute('''
+                INSERT INTO products VALUES (?, ?, ?, ?)
+            ''', (p["id"], p["name"], p["specialty"], p["description"]))
+            
+        metrics = DEFAULT_DATA["salesMetrics"]
+        cursor.execute('''
+            INSERT INTO sales_metrics (monthlyTotalSales, months, categoryShare) VALUES (?, ?, ?)
+        ''', (json.dumps(metrics["monthlyTotalSales"]), json.dumps(metrics["months"]), json.dumps(metrics["categoryShare"])))
+        
+        conn.commit()
+        conn.close()
+        print("SQLite database created and seeded successfully.")
 
-def save_db(data):
-    with open(DB_FILE, 'w') as f:
-        json.dump(data, f, indent=4)
+def get_full_db():
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    # Fetch MRs
+    cursor.execute("SELECT * FROM mrs")
+    mrs = [dict(row) for row in cursor.fetchall()]
+    
+    # Fetch Doctors
+    cursor.execute("SELECT * FROM doctors")
+    doctors = []
+    for row in cursor.fetchall():
+        d = dict(row)
+        d["availability"] = json.loads(d["availability"])
+        doctors.append(d)
+        
+    # Fetch Meetings
+    cursor.execute("SELECT * FROM meetings")
+    meetings = [dict(row) for row in cursor.fetchall()]
+    
+    # Fetch Territories
+    cursor.execute("SELECT * FROM territories")
+    territories = [dict(row) for row in cursor.fetchall()]
+    
+    # Fetch Products
+    cursor.execute("SELECT * FROM products")
+    products = [dict(row) for row in cursor.fetchall()]
+    
+    # Fetch Sales Metrics
+    cursor.execute("SELECT * FROM sales_metrics ORDER BY id DESC LIMIT 1")
+    row = cursor.fetchone()
+    sales_metrics = {}
+    if row:
+        r = dict(row)
+        sales_metrics = {
+            "monthlyTotalSales": json.loads(r["monthlyTotalSales"]),
+            "months": json.loads(r["months"]),
+            "categoryShare": json.loads(r["categoryShare"])
+        }
+        
+    conn.close()
+    
+    return {
+        "mrs": mrs,
+        "doctors": doctors,
+        "meetings": meetings,
+        "territories": territories,
+        "products": products,
+        "salesMetrics": sales_metrics
+    }
 
 class RESTRequestHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
-        # Prevent browser caching of static resources
         self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
         self.send_header('Pragma', 'no-cache')
         self.send_header('Expires', '0')
@@ -356,7 +519,7 @@ class RESTRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         url = urlparse(self.path)
         if url.path == '/api/data':
-            db = load_db()
+            db = get_full_db()
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
@@ -375,61 +538,74 @@ class RESTRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(400, "Invalid JSON body")
             return
 
-        db = load_db()
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
 
         if url.path == '/api/products':
-            new_prod = {
-                "id": f"prod-{len(db['products']) + 1:02d}",
-                "name": req_body.get("name"),
-                "specialty": req_body.get("specialty"),
-                "description": req_body.get("description")
-            }
-            while any(p["id"] == new_prod["id"] for p in db["products"]):
-                suffix = int(new_prod["id"].split('-')[1]) + 1
-                new_prod["id"] = f"prod-{suffix:02d}"
+            # Get existing product count to generate ID
+            cursor.execute("SELECT count(*) FROM products")
+            count = cursor.fetchone()[0]
+            prod_id = f"prod-{count + 1:02d}"
+            
+            # Ensure unique ID
+            while True:
+                cursor.execute("SELECT id FROM products WHERE id = ?", (prod_id,))
+                if cursor.fetchone() is None:
+                    break
+                suffix = int(prod_id.split('-')[1]) + 1
+                prod_id = f"prod-{suffix:02d}"
                 
-            db["products"].append(new_prod)
-            save_db(db)
+            cursor.execute('''
+                INSERT INTO products (id, name, specialty, description)
+                VALUES (?, ?, ?, ?)
+            ''', (prod_id, req_body.get("name"), req_body.get("specialty"), req_body.get("description")))
+            conn.commit()
             
             self.send_response(201)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps(db).encode('utf-8'))
 
         elif url.path == '/api/meetings':
-            new_meet = {
-                "id": f"meet-{len(db['meetings']) + 1:02d}",
-                "mrId": req_body.get("mrId"),
-                "doctorId": req_body.get("doctorId"),
-                "date": req_body.get("date"),
-                "time": req_body.get("time"),
-                "status": "pending",
-                "notes": req_body.get("notes", "")
-            }
-            while any(m["id"] == new_meet["id"] for m in db["meetings"]):
-                suffix = int(new_meet["id"].split('-')[1]) + 1
-                new_meet["id"] = f"meet-{suffix:02d}"
+            # Get existing meeting count to generate ID
+            cursor.execute("SELECT count(*) FROM meetings")
+            count = cursor.fetchone()[0]
+            meet_id = f"meet-{count + 1:02d}"
+            
+            # Ensure unique ID
+            while True:
+                cursor.execute("SELECT id FROM meetings WHERE id = ?", (meet_id,))
+                if cursor.fetchone() is None:
+                    break
+                suffix = int(meet_id.split('-')[1]) + 1
+                meet_id = f"meet-{suffix:02d}"
                 
-            db["meetings"].append(new_meet)
-            save_db(db)
-
+            cursor.execute('''
+                INSERT INTO meetings (id, mrId, doctorId, date, time, status, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (meet_id, req_body.get("mrId"), req_body.get("doctorId"), 
+                  req_body.get("date"), req_body.get("time"), "pending", req_body.get("notes", "")))
+            conn.commit()
+            
             self.send_response(201)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps(db).encode('utf-8'))
 
         elif url.path == '/api/meetings/confirm':
             meet_id = req_body.get("meetingId")
-            meet = next((m for m in db["meetings"] if m["id"] == meet_id), None)
-            if meet:
-                meet["status"] = "scheduled"
-                save_db(db)
+            cursor.execute("SELECT id FROM meetings WHERE id = ?", (meet_id,))
+            if cursor.fetchone():
+                cursor.execute("UPDATE meetings SET status = 'scheduled' WHERE id = ?", (meet_id,))
+                conn.commit()
                 self.send_response(200)
             else:
                 self.send_response(404)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps(db).encode('utf-8'))
+
+        elif url.path == '/api/meetings/reschedule':
+            meet_id = req_body.get("meetingId")
+            new_time = req_body.get("time")
+            cursor.execute("SELECT id FROM meetings WHERE id = ?", (meet_id,))
+            if cursor.fetchone():
+                cursor.execute("UPDATE meetings SET time = ?, status = 'scheduled' WHERE id = ?", (new_time, meet_id))
+                conn.commit()
+                self.send_response(200)
+            else:
+                self.send_response(404)
 
         elif url.path == '/api/meetings/complete':
             meet_id = req_body.get("meetingId")
@@ -437,112 +613,107 @@ class RESTRequestHandler(http.server.SimpleHTTPRequestHandler):
             deal_value = int(req_body.get("dealValue", 0))
             notes = req_body.get("notes", "")
 
-            meet = next((m for m in db["meetings"] if m["id"] == meet_id), None)
-            if meet:
-                meet["status"] = "completed"
-                meet["notes"] = f"[Prescription Potential: {potential}] {notes or 'Product presentation completed successfully.'}"
+            cursor.execute("SELECT mrId, doctorId FROM meetings WHERE id = ?", (meet_id,))
+            meeting_row = cursor.fetchone()
+            
+            if meeting_row:
+                mr_id = meeting_row[0]
+                notes_compiled = f"[Prescription Potential: {potential}] {notes or 'Product presentation completed successfully.'}"
                 
-                mr = next((m for m in db["mrs"] if m["id"] == meet["mrId"]), None)
-                if mr:
-                    mr["monthlySales"] += deal_value
+                # Update meeting status
+                cursor.execute("UPDATE meetings SET status = 'completed', notes = ? WHERE id = ?", (notes_compiled, meet_id))
                 
-                db["salesMetrics"]["monthlyTotalSales"][5] += deal_value
+                # Update representative sales
+                cursor.execute("UPDATE mrs SET monthlySales = monthlySales + ? WHERE id = ?", (deal_value, mr_id))
                 
-                save_db(db)
+                # Update global sales metrics
+                cursor.execute("SELECT id, monthlyTotalSales, months, categoryShare FROM sales_metrics ORDER BY id DESC LIMIT 1")
+                metrics_row = cursor.fetchone()
+                if metrics_row:
+                    metrics_id = metrics_row[0]
+                    sales = json.loads(metrics_row[1])
+                    sales[5] += deal_value # June index
+                    
+                    cursor.execute("UPDATE sales_metrics SET monthlyTotalSales = ? WHERE id = ?", (json.dumps(sales), metrics_id))
+                
+                conn.commit()
                 self.send_response(200)
             else:
                 self.send_response(404)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps(db).encode('utf-8'))
-
-        elif url.path == '/api/meetings/reschedule':
-            meet_id = req_body.get("meetingId")
-            new_time = req_body.get("time")
-            meet = next((m for m in db["meetings"] if m["id"] == meet_id), None)
-            if meet:
-                meet["time"] = new_time
-                meet["status"] = "scheduled"
-                save_db(db)
-                self.send_response(200)
-            else:
-                self.send_response(404)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps(db).encode('utf-8'))
 
         elif url.path == '/api/doctors':
-            new_doc = {
-                "id": f"doc-{len(db['doctors']) + 1:02d}",
-                "name": req_body.get("name"),
-                "clinicName": req_body.get("clinicName"),
-                "specialty": req_body.get("specialty"),
-                "region": req_body.get("region"),
-                "address": req_body.get("address"),
-                "availability": req_body.get("availability", []),
-                "prescriptionPotential": req_body.get("prescriptionPotential", "Medium"),
-                "preferredTime": req_body.get("preferredTime"),
-                "phone": req_body.get("phone", ""),
-                "email": req_body.get("email", "")
-            }
-            while any(d["id"] == new_doc["id"] for d in db["doctors"]):
-                suffix = int(new_doc["id"].split('-')[1]) + 1
-                new_doc["id"] = f"doc-{suffix:02d}"
-                
-            db["doctors"].append(new_doc)
-            save_db(db)
+            cursor.execute("SELECT count(*) FROM doctors")
+            count = cursor.fetchone()[0]
+            doc_id = f"doc-{count + 1:02d}"
             
+            while True:
+                cursor.execute("SELECT id FROM doctors WHERE id = ?", (doc_id,))
+                if cursor.fetchone() is None:
+                    break
+                suffix = int(doc_id.split('-')[1]) + 1
+                doc_id = f"doc-{suffix:02d}"
+                
+            cursor.execute('''
+                INSERT INTO doctors (id, name, clinicName, specialty, region, address, availability, prescriptionPotential, preferredTime, phone, email)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (doc_id, req_body.get("name"), req_body.get("clinicName"), req_body.get("specialty"), 
+                  req_body.get("region"), req_body.get("address"), json.dumps(req_body.get("availability", [])), 
+                  req_body.get("prescriptionPotential", "Medium"), req_body.get("preferredTime"), 
+                  req_body.get("phone", ""), req_body.get("email", "")))
+            conn.commit()
             self.send_response(201)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps(db).encode('utf-8'))
 
         elif url.path == '/api/doctors/update':
             doc_id = req_body.get("id")
-            doc = next((d for d in db["doctors"] if d["id"] == doc_id), None)
-            if doc:
-                doc["name"] = req_body.get("name", doc["name"])
-                doc["clinicName"] = req_body.get("clinicName", doc["clinicName"])
-                doc["specialty"] = req_body.get("specialty", doc["specialty"])
-                doc["region"] = req_body.get("region", doc["region"])
-                doc["address"] = req_body.get("address", doc["address"])
-                doc["availability"] = req_body.get("availability", doc["availability"])
-                doc["prescriptionPotential"] = req_body.get("prescriptionPotential", doc["prescriptionPotential"])
-                doc["preferredTime"] = req_body.get("preferredTime", doc["preferredTime"])
-                doc["phone"] = req_body.get("phone", doc["phone"])
-                doc["email"] = req_body.get("email", doc["email"])
-                save_db(db)
+            cursor.execute("SELECT id FROM doctors WHERE id = ?", (doc_id,))
+            if cursor.fetchone():
+                cursor.execute('''
+                    UPDATE doctors 
+                    SET name=?, clinicName=?, specialty=?, region=?, address=?, availability=?, prescriptionPotential=?, preferredTime=?, phone=?, email=?
+                    WHERE id=?
+                ''', (req_body.get("name"), req_body.get("clinicName"), req_body.get("specialty"), 
+                      req_body.get("region"), req_body.get("address"), json.dumps(req_body.get("availability", [])), 
+                      req_body.get("prescriptionPotential"), req_body.get("preferredTime"), 
+                      req_body.get("phone"), req_body.get("email"), doc_id))
+                conn.commit()
                 self.send_response(200)
             else:
                 self.send_response(404)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps(db).encode('utf-8'))
 
         elif url.path == '/api/doctors/delete':
             doc_id = req_body.get("id")
-            doc = next((d for d in db["doctors"] if d["id"] == doc_id), None)
-            if doc:
-                db["doctors"].remove(doc)
+            cursor.execute("SELECT id FROM doctors WHERE id = ?", (doc_id,))
+            if cursor.fetchone():
+                cursor.execute("DELETE FROM doctors WHERE id = ?", (doc_id,))
                 
-                # Automatically cancel active meetings for this doctor
-                for meet in db["meetings"]:
-                    if meet["doctorId"] == doc_id and meet["status"] in ["pending", "scheduled"]:
-                        meet["status"] = "cancelled"
-                        meet["notes"] = f"[System Alert] Meeting cancelled due to physician removal from CRM registry."
+                # Cascade cancellations
+                cursor.execute('''
+                    UPDATE meetings 
+                    SET status = 'cancelled', notes = '[System Alert] Meeting cancelled due to physician removal from CRM registry.'
+                    WHERE doctorId = ? AND status IN ('pending', 'scheduled')
+                ''', (doc_id,))
                 
-                save_db(db)
+                conn.commit()
                 self.send_response(200)
             else:
                 self.send_response(404)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps(db).encode('utf-8'))
 
         else:
-            self.send_error(404, "Endpoint not found")
+            self.send_response(404)
+            self.end_headers()
+            conn.close()
+            return
+
+        conn.close()
+        
+        # Build and send full updated database
+        db = get_full_db()
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(json.dumps(db).encode('utf-8'))
 
 if __name__ == '__main__':
+    init_db()
     with socketserver.TCPServer(("", PORT), RESTRequestHandler) as httpd:
-        print(f"Serving Smart MR Agent platform on port {PORT} with REST persistence.")
+        print(f"Serving Smart MR Agent platform on port {PORT} with SQLite persistence.")
         httpd.serve_forever()

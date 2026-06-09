@@ -4,7 +4,7 @@ import { MatchingAgent } from './matchingAgent.js';
 import { SchedulingAgent } from './schedulingAgent.js';
 import { AnalyticsAgent } from './analyticsAgent.js';
 import { ReportAgent } from './reportAgent.js';
-import { MR_DATA, DOCTORS_DATA, PRODUCTS_DATA } from './data.js';
+import { MR_DATA, DOCTORS_DATA, PRODUCTS_DATA, MEETINGS_DATA } from './data.js';
 
 export class AgentConsole {
   constructor(appInstance) {

@@ -417,6 +417,52 @@ class App {
         } catch (err) {
           this.console.writeLog("System", `Error saving physician: ${err.message}`, "sender-system");
         }
+    // 14. Representative Territory Reassignment
+    const reassignForm = document.getElementById("mr-reassign-form");
+    if (reassignForm) {
+      reassignForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const mrId = document.getElementById("reassign-mr-select").value;
+        const territory = document.getElementById("reassign-territory-select").value;
+        
+        const mr = MR_DATA.find(m => m.id === mrId);
+        const oldTerritory = mr?.territory || "Unassigned";
+
+        if (oldTerritory === territory) {
+          alert(`Representative is already assigned to ${territory}.`);
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/mrs/reassign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mrId, territory })
+          });
+          
+          if (!response.ok) throw new Error('Failed to reassign representative on server');
+          const updatedDb = await response.json();
+          await this.syncWithServer(updatedDb);
+
+          // Log terminal message
+          this.console.writeLog("System", `Re-allocating representative ${mr?.name} from ${oldTerritory} to ${territory}.`, "sender-system");
+          this.console.writeLog("Analytics Agent", `Recalculating demographic density grids and ROI recommendation metrics...`, "sender-analytics");
+
+          // Refresh other views
+          this.renderMRDirectory();
+          this.renderCalendar();
+          this.initDropdowns();
+          this.renderAnalytics(); // Re-runs Analytics Agent!
+          this.renderReport(this.console.reportAgent.generateReportData("All"));
+          this.renderPhoneAgenda();
+
+          if (window.confetti) {
+            window.confetti({ particleCount: 60, spread: 50, origin: { y: 0.6 } });
+          }
+        } catch (err) {
+          this.console.writeLog("System", `Error reassigning representative: ${err.message}`, "sender-system");
+        }
       });
     }
   }
@@ -497,9 +543,21 @@ class App {
   initDropdowns() {
     const mrSelect = document.getElementById("sched-mr");
     const docSelect = document.getElementById("sched-doctor");
+    const reassignMrSelect = document.getElementById("reassign-mr-select");
+    const reassignTerrSelect = document.getElementById("reassign-territory-select");
 
-    mrSelect.innerHTML = MR_DATA.map(m => `<option value="${m.id}">${m.name} (${m.specialty})</option>`).join("");
-    docSelect.innerHTML = DOCTORS_DATA.map(d => `<option value="${d.id}">${d.name} (${d.specialty} - ${d.region})</option>`).join("");
+    if (mrSelect) {
+      mrSelect.innerHTML = MR_DATA.map(m => `<option value="${m.id}">${m.name} (${m.specialty})</option>`).join("");
+    }
+    if (docSelect) {
+      docSelect.innerHTML = DOCTORS_DATA.map(d => `<option value="${d.id}">${d.name} (${d.specialty} - ${d.region})</option>`).join("");
+    }
+    if (reassignMrSelect) {
+      reassignMrSelect.innerHTML = MR_DATA.map(m => `<option value="${m.id}">${m.name} (${m.territory})</option>`).join("");
+    }
+    if (reassignTerrSelect) {
+      reassignTerrSelect.innerHTML = TERRITORIES_DATA.map(t => `<option value="${t.name}">${t.name}</option>`).join("");
+    }
     this.renderProducts();
   }
 

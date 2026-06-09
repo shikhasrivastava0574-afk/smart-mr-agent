@@ -434,27 +434,60 @@
               </div>
             </div>
 
-            <!-- Right panel: Quick coverage statistics -->
-            <div class="glass-panel">
-              <h3 class="section-title">
-                <i data-lucide="database"></i>
-                <span>Coverage Grid</span>
-              </h3>
-              
-              <div class="table-container">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Territory</th>
-                      <th style="text-align: right;">Physicians</th>
-                      <th style="text-align: right;">MR Count</th>
-                      <th style="text-align: right;">Demand</th>
-                    </tr>
-                  </thead>
-                  <tbody id="territory-coverage-table-body">
-                    <!-- Injected dynamically -->
-                  </tbody>
-                </table>
+            <!-- Right panel: Quick coverage statistics & Allocator -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+              <div class="glass-panel">
+                <h3 class="section-title">
+                  <i data-lucide="database"></i>
+                  <span>Coverage Grid</span>
+                </h3>
+                
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Territory</th>
+                        <th style="text-align: right;">Physicians</th>
+                        <th style="text-align: right;">MR Count</th>
+                        <th style="text-align: right;">Demand</th>
+                      </tr>
+                    </thead>
+                    <tbody id="territory-coverage-table-body">
+                      <!-- Injected dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Reassignment Panel -->
+              <div class="glass-panel">
+                <h3 class="section-title">
+                  <i data-lucide="user-cog" style="color: hsl(var(--agent-system));"></i>
+                  <span>Representative Territory Allocator</span>
+                </h3>
+                <p style="font-size: 0.8rem; color: hsl(var(--text-secondary)); margin-bottom: 16px;">
+                  Reassign field representatives to target regions. The Analytics Agent will automatically recalculate regional demand and ROI metrics.
+                </p>
+
+                <form id="mr-reassign-form" style="display: flex; flex-direction: column; gap: 12px;">
+                  <div class="form-group">
+                    <label for="reassign-mr-select">Select Representative</label>
+                    <select id="reassign-mr-select" class="form-select" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; padding: 10px;" required>
+                      <!-- Injected dynamically -->
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="reassign-territory-select">Target Territory</label>
+                    <select id="reassign-territory-select" class="form-select" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; padding: 10px;" required>
+                      <!-- Injected dynamically -->
+                    </select>
+                  </div>
+
+                  <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, hsl(var(--agent-system)), hsl(var(--agent-analytics))); box-shadow: 0 4px 15px hsla(var(--agent-analytics), 0.2); width: 100%; margin-top: 8px;">
+                    <i data-lucide="check-square"></i> Apply Allocation
+                  </button>
+                </form>
               </div>
             </div>
           </div>

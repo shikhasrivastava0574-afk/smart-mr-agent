@@ -698,6 +698,27 @@ class RESTRequestHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 self.send_response(404)
 
+        elif url.path == '/api/mrs/reassign':
+            mr_id = req_body.get("mrId")
+            new_territory = req_body.get("territory")
+            
+            cursor.execute("SELECT territory FROM mrs WHERE id = ?", (mr_id,))
+            row = cursor.fetchone()
+            if row:
+                old_territory = row[0]
+                
+                # Update MR's territory assignment
+                cursor.execute("UPDATE mrs SET territory = ? WHERE id = ?", (new_territory, mr_id))
+                
+                # Update territories MR count
+                cursor.execute("UPDATE territories SET mrCount = mrCount - 1 WHERE name = ?", (old_territory,))
+                cursor.execute("UPDATE territories SET mrCount = mrCount + 1 WHERE name = ?", (new_territory,))
+                
+                conn.commit()
+                self.send_response(200)
+            else:
+                self.send_response(404)
+
         else:
             self.send_response(404)
             self.end_headers()
